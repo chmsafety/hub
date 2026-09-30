@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0B1024">
 <title>ORB · CHM 통합정보</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ORB">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -221,6 +226,27 @@ table.t th{color:var(--ink3);font-weight:500;font-size:12.5px}
 .ask .btn.mic.on{background:var(--crit);color:#fff;animation:halo 1.2s ease-in-out infinite}
 .sugg{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 
+/* ── 대신 등록 제안 카드 ───────────────── */
+.prop{border:1px solid var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--card));border-radius:14px;padding:12px;margin-top:10px}
+.prop .ph{display:flex;align-items:center;gap:8px;font-weight:700;margin-bottom:8px}
+.prop .ph .tag{margin-left:auto}
+.prop .pf{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 10px}
+@media (max-width:640px){.prop .pf{grid-template-columns:minmax(0,1fr)}}
+.prop .pf label{display:block;font-size:12px;color:var(--ink3)}
+.prop .pf input{width:100%;padding:7px 10px;border-radius:9px;border:1px solid var(--line);background:var(--card2);font-size:14px}
+.prop .pa{display:flex;gap:8px;justify-content:flex-end;margin-top:10px;align-items:center}
+.prop .pa .st{margin-right:auto;font-size:13px;color:var(--ink2)}
+.prop.done{border-color:var(--good);background:color-mix(in srgb,var(--good) 10%,var(--card))}
+.prop.fail{border-color:var(--crit)}
+.ntc{display:flex;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line);font-size:13.5px;cursor:pointer}
+.ntc:last-child{border-bottom:0}
+.ntc .ic{flex:none;width:24px;text-align:center}
+.ntc .b{min-width:0;flex:1}
+.ntc .b b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ntc .b span{color:var(--ink3);font-size:12.5px;display:block;white-space:pre-line}
+.ntc .d{color:var(--ink3);font-size:12px;white-space:nowrap}
+.ntc.unread b{color:var(--accent)}
+
 /* ── 창 ────────────────────────────── */
 .modal{position:fixed;inset:0;background:rgba(5,8,20,.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
 .modal .box{background:var(--card);border:1px solid var(--line);border-radius:18px;max-width:560px;width:100%;max-height:86vh;overflow:auto;padding:18px;box-shadow:var(--shadow)}
@@ -304,7 +330,11 @@ table.t th{color:var(--ink3);font-weight:500;font-size:12.5px}
         <div class="card"><h3>챙겨야 할 것 <span class="n" id="n-warn"></span></h3><div class="list" id="l-warn"></div></div>
         <div class="card"><h3>최근 바뀐 것 <span class="n" id="n-chg"></span></h3><div class="list" id="l-chg"></div></div>
       </div>
-      <div class="card" style="margin-top:14px"><h3>연결된 앱 <span class="n" id="n-apps"></span></h3><div class="tiles" id="tiles"></div></div>
+      <div class="grid g2" style="margin-top:14px">
+        <div class="card"><h3>연결된 앱 <span class="n" id="n-apps"></span></h3><div class="tiles" id="tiles"></div></div>
+        <div class="card"><h3>오브가 보낸 알림 <span class="n" id="n-ntc"></span></h3><div id="l-ntc" class="empty">아직 없어요</div>
+          <div id="ntc-off" class="hide" style="margin-top:8px"><button class="btn sm primary" id="b-push-on">🔔 이 기기에서 알림 받기</button></div></div>
+      </div>
     </section>
 
     <!-- 오브와 대화 -->
@@ -325,6 +355,7 @@ table.t th{color:var(--ink3);font-weight:500;font-size:12.5px}
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
             <button class="btn sm" id="rp-week">📄 주간 리포트</button>
             <button class="btn sm" id="rp-month">📄 월간 리포트</button>
+            <button class="btn sm" id="rp-past">지난 리포트</button>
             <button class="btn sm" id="chat-clear">대화 지우기</button>
           </div>
         </div>
@@ -365,6 +396,19 @@ table.t th{color:var(--ink3);font-weight:500;font-size:12.5px}
           <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm primary" id="ai-save">저장</button><button class="btn sm" id="ai-test">연결 시험</button></div>
           <div class="err" id="ai-err"></div>
         </div>
+        <div class="card"><h3>알림 <span class="n" id="push-state"></span></h3>
+          <p style="margin:0 0 8px;color:var(--ink3);font-size:13px">이상 징후(새로 생긴 주의·긴급 항목, 앱 연결 문제)와 주간·월간 리포트를 이 기기의 알림으로 받아요. 밤 10시~아침 7시에는 긴급만 보내요. 폰은 홈 화면에 추가(앱 설치)한 뒤 켜 주세요.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm primary" id="push-on">🔔 이 기기 알림 켜기</button><button class="btn sm" id="push-off">끄기</button><button class="btn sm" id="push-test">시험 알림</button><button class="btn sm" id="push-run">지금 점검</button></div>
+          <div class="err" id="push-err"></div>
+          <div id="push-devices" style="font-size:12.5px;color:var(--ink3);margin-top:6px"></div>
+        </div>
+        <div class="card"><h3>대신 등록 <span class="n" id="gh-state"></span></h3>
+          <p style="margin:0 0 8px;color:var(--ink3);font-size:13px">대화에서 "10/5 T-타워 점검 잡아줘"처럼 부탁하면 확인 카드가 뜨고, [등록]을 누르면 그 앱에 들어가요. 안전보건점검(점검 일정)·교육관리(교육 차수)는 커넥터 비밀키로, 업무관리(업무·일정)는 GitHub 토큰(<code>repo</code> 권한, data.json 쓰기)이 필요해요.</p>
+          <label class="field"><span>업무관리 GitHub 토큰</span><input id="gh-token" type="password" autocomplete="off" placeholder="ghp_… (새로 넣을 때만)"></label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm primary" id="gh-save">저장</button></div>
+          <div class="err" id="gh-err"></div>
+          <div class="tscroll" style="margin-top:8px"><table class="t" id="t-writes"></table></div>
+        </div>
         <div class="card"><h3>화면</h3>
           <label class="switch"><input type="checkbox" id="c-voice"> 브리핑을 목소리로 읽어 주기</label><br>
           <label class="switch" style="margin-top:8px">테마
@@ -383,14 +427,14 @@ table.t th{color:var(--ink3);font-weight:500;font-size:12.5px}
 <script>
 "use strict";
 /* ================================================================
- *  ORB — CHM 통합정보 비서 · 2단계 (2026-10-01) — 오브와 대화 · 리포트 추가
+ *  ORB — CHM 통합정보 비서 · 3단계 (2026-10-01) — 알림 · 대신 등록 · 리포트 자동 발송
  *  빌딩정보 Supabase 프로젝트의 hub_ 표를 읽는다. 본인(허브 주인) + 2단계 인증 전용.
  * ================================================================ */
 var HUB = {
   url: "https://dbymktwxokbvfshlztrg.supabase.co",
   key: "sb_publishable_RHDgmlGV-m946etnPHfXaw_vy2u8uCp",
   mail: "@bldg.local",
-  version: "2단계 · 2026-10-01"
+  version: "3단계 · 2026-10-01"
 };
 var sb = window.supabase.createClient(HUB.url, HUB.key, { auth: { persistSession: true, storageKey: "orb-auth" } });
 
@@ -552,8 +596,10 @@ async function enterApp() {
   $("who").textContent = (S.me.name || S.me.login_id || "") + " 님";
   show("s-app");
   loadChat();
-  go("home");
+  go(/^#(chat|settings|search|sites)$/.test(location.hash) ? location.hash.slice(1) : "home");
   await loadAll();
+  registerSW();
+  pushSync();
 }
 
 /* ── 자료 불러오기 ──────────────────────────────────── */
@@ -576,13 +622,15 @@ async function loadAll() {
       sb.from("hub_apps").select("*").order("sort"),
       pageAll(function () { return sb.from("hub_items").select("app_id,kind,ext_id,site_id,site_raw,date,date_end,title,status,severity,fields,url,changed_at,first_seen").eq("deleted", false).order("date", { ascending: false, nullsFirst: false }); }),
       sb.from("hub_changes").select("*").gte("at", since).order("at", { ascending: false }).limit(300),
-      sb.rpc("hub_sites")
+      sb.rpc("hub_sites"),
+      sb.from("hub_notices").select("id,at,kind,title,body,url,refs,read_at").order("at", { ascending: false }).limit(8)
     ]);
     if (res[0].error) throw res[0].error;
     S.apps = res[0].data || [];
     S.items = res[1];
     S.changes = (res[2].data || []);
     S.sites = res[3].data || [];
+    S.notices = res[4].data || [];
     S.siteById = {}; S.sites.forEach(function (s) { S.siteById[s.id] = s; });
     S.loadedAt = Date.now();
     render();
@@ -736,6 +784,7 @@ function say(b) {
 $("orb-home").addEventListener("click", function () { speakBriefing(false); });
 
 function renderHome() {
+  try { renderNotices(); } catch (e) { /* 알림 표시는 보조 */ }
   var t = todayList();
   $("n-today").textContent = t.length + "건";
   $("l-today").innerHTML = t.length ? t.slice(0, 12).map(function (i) { return itemRow(i, i.date === kst() ? "오늘" : "내일"); }).join("") : '<div class="empty">오늘·내일 일정이 없어요</div>';
@@ -760,6 +809,32 @@ function renderHome() {
   }).join("");
   speakBriefing(true);
 }
+function renderNotices() {
+  var n = S.notices || [], box = $("l-ntc");
+  var unread = n.filter(function (x) { return !x.read_at; }).length;
+  $("n-ntc").textContent = unread ? "안 읽음 " + unread : (n.length ? n.length + "건" : "");
+  var ic = { alert: "⚠", report: "📄", test: "🔔", app_error: "🔌", info: "•" };
+  box.className = n.length ? "" : "empty";
+  box.innerHTML = n.length ? n.map(function (x) {
+    return '<div class="ntc' + (x.read_at ? "" : " unread") + '" data-nid="' + x.id + '"><div class="ic">' + (ic[x.kind] || "•") + '</div><div class="b"><b>' + esc(x.title) + "</b><span>" + esc(String(x.body || "").split("\n").slice(0, 2).join("\n")) + '</span></div><div class="d">' + esc(ago(x.at)) + "</div></div>";
+  }).join("") : "아직 없어요";
+  var canPush = "Notification" in window && "serviceWorker" in navigator && "PushManager" in window;
+  $("ntc-off").classList.toggle("hide", !canPush || Notification.permission === "granted" || store("orb-push-dismiss") === "1");
+}
+$("l-ntc").addEventListener("click", async function (e) {
+  var el = e.target.closest("[data-nid]"); if (!el) return;
+  var id = Number(el.getAttribute("data-nid")), x = (S.notices || []).filter(function (n) { return n.id === id; })[0];
+  if (!x) return;
+  if (!x.read_at) { x.read_at = new Date().toISOString(); el.classList.remove("unread"); sb.from("hub_notices").update({ read_at: x.read_at }).eq("id", id).then(function () { renderNotices(); }); }
+  if (x.kind === "report") { go("chat"); showPastReports(); return; }
+  var refs = x.refs || [];
+  if (refs.length === 1) { var it = findItem(refs[0].app_id + "\u0001" + refs[0].kind + "\u0001" + refs[0].ext_id); if (it) return openItem(it); }
+  modal("<h2>" + esc(x.title) + "</h2><div style=\"white-space:pre-wrap;margin:8px 0 12px\">" + esc(x.body || "") + "</div>" +
+    (refs.length ? '<div class="list">' + refs.map(function (r) { var it = findItem(r.app_id + "\u0001" + r.kind + "\u0001" + r.ext_id); return it ? itemRow(it) : '<div class="row"><div class="t"><b>' + esc(r.title) + "</b></div></div>"; }).join("") + "</div>" : "") +
+    '<div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="btn sm" data-close>닫기</button></div>');
+});
+$("b-push-on").addEventListener("click", function () { go("settings"); setTimeout(pushOn, 100); });
+
 function diffText(c) {
   if (c.change !== "update" || !c.before || !c.after) return "";
   var out = [];
@@ -803,7 +878,7 @@ document.addEventListener("keydown", function (e) { if (e.key === "Escape") $("m
 
 /* ── 오브와 대화 (2단계) ─────────────────────────────── */
 var CHAT = { msgs: [], busy: false, refs: {}, ready: null, rec: null };
-var SUGG = ["오늘 뭐 챙겨야 해?", "이번 주 점검 일정 알려줘", "올해 산업재해 몇 건이야?", "교육 보고 안 된 차수 있어?", "인원 부족한 사업장은?", "마감 지난 업무 있어?"];
+var SUGG = ["오늘 뭐 챙겨야 해?", "이번 주 점검 일정 알려줘", "올해 산업재해 몇 건이야?", "교육 보고 안 된 차수 있어?", "인원 부족한 사업장은?", "다음 주 화요일 T-타워 점검 잡아줘"];
 
 function loadChat() {
   try { var v = JSON.parse(store("orb-chat") || "[]"); if (Array.isArray(v)) CHAT.msgs = v.slice(-30); } catch (e) { CHAT.msgs = []; }
@@ -838,8 +913,9 @@ function renderChat() {
     box.innerHTML = CHAT.msgs.map(function (m, i) {
       if (m.role === "user") return '<div class="msg me">' + esc(m.content) + "</div>";
       var refs = m.refs || [];
+      var props = (m.proposals || []).map(function (p, pi) { return propCard(p, i, pi); }).join("");
       return '<div class="msg orb' + (m.err ? " bad" : "") + '">' + (m.err ? esc(m.content) : fmtAnswer(m.content, refs)) +
-        (refs.length ? '<div class="refs">' + refs.map(refChip).join("") + "</div>" : "") +
+        (refs.length ? '<div class="refs">' + refs.map(refChip).join("") + "</div>" : "") + props +
         (m.usage ? '<div class="meta">' + (m.usage.tools ? "허브 검색 " + m.usage.tools + "회 · " : "") + Math.round((m.usage.ms || 0) / 100) / 10 + "초" + (m.at ? " · " + new Date(m.at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) : "") + "</div>" : "") + "</div>";
     }).join("");
   }
@@ -878,7 +954,7 @@ async function sendAsk(text) {
   try {
     var history = CHAT.msgs.slice(0, -1).filter(function (m) { return !m.err; }).slice(-8).map(function (m) { return { role: m.role, content: m.content }; });
     var d = await askOrb({ action: "ask", q: q, history: history });
-    CHAT.msgs.push({ role: "assistant", content: d.answer, refs: d.refs || [], usage: d.usage, at: Date.now() });
+    CHAT.msgs.push({ role: "assistant", content: d.answer, refs: d.refs || [], proposals: d.proposals || [], usage: d.usage, at: Date.now() });
     CHAT.busy = false; saveChat(); renderChat();
     var warned = /주의|긴급|지연|부족|미기재|없어요/.test(d.answer);
     orb(warned ? "warn" : "happy", "chat"); orb("idle", "mini");
@@ -976,6 +1052,130 @@ $("ai-test").addEventListener("click", async function () {
     toast("✓ " + d.answer.slice(0, 60)); $("ai-err").style.color = "var(--good)"; $("ai-err").textContent = "✓ " + d.answer;
   } catch (err) { $("ai-err").style.color = ""; $("ai-err").textContent = err.message || String(err); }
   finally { b.disabled = false; b.textContent = "연결 시험"; }
+});
+
+/* ── 대신 등록 (3단계) ──────────────────────────────── */
+var PROP_LABEL = {
+  safety: { inspect_plan: "점검 일정 (안전보건점검)" }, edu: { session: "교육 차수 (교육관리)" },
+  team: { task: "업무 (업무관리 대시보드)", schedule: "일정 (업무관리 대시보드)" }
+};
+var PROP_FIELDS = {
+  "safety/inspect_plan": [["site", "사업장"], ["date", "예정일"], ["inspector", "점검자"], ["memo", "메모"]],
+  "edu/session": [["site", "사업장"], ["co", "회사"], ["course", "과정 코드"], ["date", "교육일자"], ["start", "시작"], ["end", "종료"], ["teacher", "강사"], ["place", "장소"], ["target", "대상인원"]],
+  "team/task": [["team", "팀(safety|edu|etc)"], ["title", "업무 내용"], ["owner", "담당자(정)"], ["owner2", "담당자(부)"], ["due", "마감일"], ["progress", "진행율"], ["memo", "기타"]],
+  "team/schedule": [["team", "팀(safety|edu|etc)"], ["person", "이름/사업장"], ["type", "종류(inspect|training|leave|etc)"], ["start", "시작일"], ["end", "종료일"], ["memo", "메모"]]
+};
+function propCard(p, mi, pi) {
+  var label = (PROP_LABEL[p.app] || {})[p.kind] || (p.app + "/" + p.kind);
+  var fs = PROP_FIELDS[p.app + "/" + p.kind] || Object.keys(p.fields || {}).map(function (k) { return [k, k]; });
+  var st = p.state || "";
+  return '<div class="prop' + (st === "done" ? " done" : st === "fail" ? " fail" : "") + '" data-mi="' + mi + '" data-pi="' + pi + '"><div class="ph">📝 ' + esc(label) + '<span class="tag' + (st === "done" ? " good" : st === "fail" ? " critical" : "") + '">' + (st === "done" ? "등록됨" : st === "fail" ? "실패" : st === "busy" ? "등록 중…" : "확인 필요") + "</span></div>" +
+    '<div style="font-size:14px;margin:0 0 8px">' + esc(p.summary || "") + "</div>" +
+    '<div class="pf">' + fs.map(function (f) { var v = p.fields && p.fields[f[0]] != null ? p.fields[f[0]] : ""; return "<div><label>" + esc(f[1]) + '</label><input data-f="' + esc(f[0]) + '" value="' + esc(v) + '"' + (st === "done" || st === "busy" ? " disabled" : "") + "></div>"; }).join("") + "</div>" +
+    '<div class="pa"><span class="st">' + esc(p.result || (st ? "" : "값을 고친 뒤 등록을 누르세요")) + "</span>" +
+    (st === "done" ? "" : '<button class="btn sm" data-act="drop"' + (st === "busy" ? " disabled" : "") + '>취소</button><button class="btn sm primary" data-act="go"' + (st === "busy" ? " disabled" : "") + '>' + (st === "fail" ? "다시 등록" : "등록") + "</button>") + "</div></div>";
+}
+$("msgs").addEventListener("click", async function (e) {
+  var b = e.target.closest("[data-act]"); if (!b) return;
+  var card = b.closest(".prop"), mi = Number(card.getAttribute("data-mi")), pi = Number(card.getAttribute("data-pi"));
+  var m = CHAT.msgs[mi]; var p = m && m.proposals && m.proposals[pi]; if (!p) return;
+  if (b.getAttribute("data-act") === "drop") { m.proposals.splice(pi, 1); saveChat(); renderChat(); return; }
+  var fields = {}; card.querySelectorAll("[data-f]").forEach(function (i) { var v = i.value.trim(); if (v !== "") fields[i.getAttribute("data-f")] = v; });
+  p.fields = fields; p.state = "busy"; p.result = ""; renderChat(); orb("think", "chat");
+  try {
+    var d = await askOrb({ action: "write", app: p.app, kind: p.kind, fields: fields });
+    p.state = "done"; p.result = d.message || "등록했어요"; saveChat(); renderChat(); orb("happy", "chat"); toast("✓ " + p.result);
+    loadAll();
+  } catch (err) {
+    p.state = "fail"; p.result = err.message || String(err); saveChat(); renderChat(); orb("warn", "chat");
+  }
+});
+
+// 지난 리포트
+async function showPastReports() {
+  var r = await sb.from("hub_chats").select("id,at,q,a,refs").eq("mode", "report").eq("ok", true).order("at", { ascending: false }).limit(12);
+  var rows = r.data || [];
+  modal("<h2>지난 리포트</h2>" + (rows.length ? '<div class="list">' + rows.map(function (x) { return '<div class="row" data-rep="' + x.id + '"><span class="dot" style="background:var(--accent)"></span><div class="t"><b>' + esc(x.q) + "</b><span>" + esc(new Date(x.at).toLocaleString("ko-KR")) + '</span></div><div class="d">열기</div></div>'; }).join("") + "</div>" : '<div class="empty">아직 만든 리포트가 없어요</div>') +
+    '<div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="btn sm" data-close>닫기</button></div>');
+  $("modal-root").addEventListener("click", function (e) {
+    var el = e.target.closest("[data-rep]"); if (!el) return;
+    var x = rows.filter(function (y) { return String(y.id) === el.getAttribute("data-rep"); })[0]; if (!x) return;
+    $("modal-root").innerHTML = "";
+    CHAT.msgs.push({ role: "assistant", content: x.a, refs: x.refs || [], report: true, at: Date.parse(x.at) });
+    saveChat(); go("chat"); renderChat();
+  });
+}
+$("rp-past").addEventListener("click", showPastReports);
+
+/* ── 알림 (3단계, Web Push) ──────────────────────────── */
+var PUSH = { reg: null };
+function pushSupported() { return "Notification" in window && "serviceWorker" in navigator && "PushManager" in window; }
+async function registerSW() {
+  if (!("serviceWorker" in navigator)) return null;
+  try { PUSH.reg = await navigator.serviceWorker.register("./sw.js", { scope: "./" }); return PUSH.reg; } catch (e) { return null; }
+}
+function b64url(s) { var p = "=".repeat((4 - s.length % 4) % 4); var b = (s + p).replace(/-/g, "+").replace(/_/g, "/"); var raw = atob(b); var out = new Uint8Array(raw.length); for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i); return out; }
+async function notifyFn(body) {
+  var r = await sb.functions.invoke("hub-notify", { body: body });
+  if (r.error) { var msg = r.error.message || String(r.error); try { var j = await r.error.context.json(); if (j && j.error) msg = j.error; } catch (e) { /* 본문 없음 */ } throw new Error(msg); }
+  if (r.data && r.data.error) throw new Error(r.data.error);
+  return r.data;
+}
+async function pushOn() {
+  $("push-err").textContent = "";
+  try {
+    if (!pushSupported()) throw new Error("이 브라우저는 알림을 지원하지 않아요. 폰이면 홈 화면에 추가한 뒤 앱에서 켜 주세요.");
+    var perm = await Notification.requestPermission();
+    if (perm !== "granted") throw new Error("알림 권한이 허용되지 않았어요 (브라우저 주소창의 자물쇠 › 알림에서 허용)");
+    var reg = PUSH.reg || await registerSW(); if (!reg) throw new Error("서비스 워커를 등록하지 못했어요");
+    await navigator.serviceWorker.ready;
+    var k = await notifyFn({ action: "pubkey" });
+    var sub = await reg.pushManager.getSubscription();
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64url(k.key) });
+    var d = await notifyFn({ action: "subscribe", sub: sub.toJSON(), ua: navigator.userAgent, label: (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "" });
+    store("orb-push", "1"); toast("이 기기에 알림을 켰어요 · 기기 " + d.devices + "대"); renderPushSettings(); renderNotices();
+  } catch (err) { $("push-err").textContent = err.message || String(err); }
+}
+async function pushOff() {
+  $("push-err").textContent = "";
+  try {
+    var reg = PUSH.reg || await registerSW(); var sub = reg && await reg.pushManager.getSubscription();
+    if (sub) { await notifyFn({ action: "unsubscribe", endpoint: sub.endpoint }); await sub.unsubscribe(); }
+    store("orb-push", "0"); toast("이 기기 알림을 껐어요"); renderPushSettings();
+  } catch (err) { $("push-err").textContent = err.message || String(err); }
+}
+async function pushSync() {   // 켜 둔 기기는 열 때마다 구독이 살아 있는지 확인해 다시 등록
+  if (store("orb-push") !== "1" || !pushSupported() || Notification.permission !== "granted") return;
+  try { var reg = PUSH.reg || await registerSW(); var sub = reg && await reg.pushManager.getSubscription(); if (sub) await notifyFn({ action: "subscribe", sub: sub.toJSON(), ua: navigator.userAgent }); } catch (e) { /* 조용히 */ }
+}
+async function renderPushSettings() {
+  var st = $("push-state");
+  if (!pushSupported()) { st.textContent = "이 브라우저는 지원 안 함"; return; }
+  st.textContent = Notification.permission === "granted" && store("orb-push") === "1" ? "이 기기 켜짐" : Notification.permission === "denied" ? "권한 거부됨" : "꺼짐";
+  try {
+    var d = await notifyFn({ action: "devices" });
+    $("push-devices").textContent = d.devices.length ? "등록된 기기 " + d.devices.length + "대 — " + d.devices.map(function (x) { return (x.label || "기기") + (x.last_ok_at ? " (" + ago(x.last_ok_at) + " 성공)" : "") + (x.fails ? " 실패 " + x.fails : ""); }).join(", ") : "등록된 기기가 없어요";
+  } catch (e) { $("push-devices").textContent = ""; }
+}
+$("push-on").addEventListener("click", pushOn);
+$("push-off").addEventListener("click", pushOff);
+$("push-test").addEventListener("click", async function () { $("push-err").textContent = ""; try { var d = await notifyFn({ action: "test" }); toast("보냈어요 · 성공 " + d.sent + " · 실패 " + d.failed); } catch (err) { $("push-err").textContent = err.message || String(err); } });
+$("push-run").addEventListener("click", async function () { $("push-err").textContent = ""; try { var d = await notifyFn({ action: "run" }); toast(d.notices.length ? d.notices.map(function (n) { return n.title; }).join(" / ") : "새로 알릴 것이 없어요"); loadAll(); } catch (err) { $("push-err").textContent = err.message || String(err); } });
+
+// 대신 등록 설정
+async function renderWriteSettings() {
+  try { var d = await askOrb({ action: "status" }); $("gh-state").textContent = d.hasGh ? "업무관리 토큰 저장됨" : "업무관리 토큰 없음"; } catch (e) { $("gh-state").textContent = ""; }
+  var r = await sb.from("hub_writes").select("*").order("id", { ascending: false }).limit(20);
+  var rows = r.data || [];
+  $("t-writes").innerHTML = rows.length ? "<tr><th>시각</th><th>앱</th><th>종류</th><th>내용</th><th>결과</th></tr>" + rows.map(function (x) {
+    var f = x.fields || {};
+    return "<tr><td>" + esc(new Date(x.at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })) + "</td><td>" + esc(appOf(x.app_id).name) + "</td><td>" + esc(KIND[x.kind] || x.kind) + "</td><td>" + esc([f.site || f.person || f.title, f.date || f.due || f.start].filter(Boolean).join(" · ")) + "</td><td>" + (x.ok ? '<span class="tag good">등록</span>' : '<span class="tag critical" title="' + esc((x.result || {}).error || "") + '">실패</span>') + "</td></tr>";
+  }).join("") : '<tr><td class="empty">아직 대신 등록한 것이 없어요</td></tr>';
+}
+$("gh-save").addEventListener("click", async function () {
+  var k = $("gh-token").value.trim(); $("gh-err").textContent = "";
+  if (!k) return toast("토큰을 넣어 주세요");
+  try { await askOrb({ action: "gh", token: k }); $("gh-token").value = ""; toast("저장했어요"); renderWriteSettings(); } catch (err) { $("gh-err").textContent = err.message || String(err); }
 });
 
 /* ── 검색 ──────────────────────────────────────────── */
@@ -1102,6 +1302,8 @@ function openSite(id) {
 var ADAPTERS = [["hub", "표준 커넥터 (hub-1)"], ["team_json", "업무관리 data.json"], ["edu_cal", "교육관리 eduCal (일정만)"], ["safe_cal", "안전보건 schedCal (일정만)"], ["local_bldg", "빌딩정보 DB 직접"], ["local_site", "사업장 관리 DB 직접"]];
 async function renderSettings() {
   renderAiSettings();
+  renderPushSettings();
+  renderWriteSettings();
   $("apps-edit").innerHTML = S.apps.map(appCard).join("") || '<div class="empty">연결된 앱이 없어요</div>';
   var r = await Promise.all([sb.rpc("hub_unmatched"), sb.from("hub_runs").select("*").order("id", { ascending: false }).limit(40)]);
   var un = r[0].data || [];
