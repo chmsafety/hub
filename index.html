@@ -120,7 +120,11 @@ main{padding:18px 0 40px}
 .orb .core{transform-origin:120px 120px;animation:breathe 4.2s ease-in-out infinite}
 .orb .halo{transform-origin:120px 120px;animation:halo 4.2s ease-in-out infinite;opacity:.55}
 .orb .ring{transform-origin:120px 120px;opacity:0}
-.orb .eyes{transition:transform .25s ease}
+.orb .eyes,.orb .face-low{transition:transform .25s ease;transform-box:view-box;transform-origin:120px 120px}
+.orb .nebula{transform-box:view-box;transform-origin:120px 120px;animation:spin 16s linear infinite}
+.orb .shadow{transform-box:view-box;transform-origin:120px 214px;animation:shadow 4.2s ease-in-out infinite}
+@keyframes shadow{0%,100%{transform:scale(1);opacity:.32}50%{transform:scale(.94);opacity:.24}}
+.orb[data-state="think"] .nebula{animation-duration:3s}
 .orb .eye{transform-box:fill-box;transform-origin:center;animation:eyeblink 5.5s infinite}
 .orb .sats{transform-origin:120px 120px;opacity:0;transition:opacity .3s}
 .orb .wave{opacity:0;transition:opacity .2s}
@@ -257,6 +261,23 @@ table.t th{color:var(--ink3);font-weight:500;font-size:12.5px}
 .toast.on{opacity:1}
 .busy{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));z-index:70;width:0;transition:width .3s}
 .busy.on{width:70%}
+
+/* ── 바탕화면 위젯 대화창 (?w=1) ─────────── */
+.w-only{display:none}
+body.widget .w-only{display:inline-flex}
+body.widget .top{display:none}
+body.widget main{padding:10px 0 8px}
+body.widget .wrap{padding:0 12px}
+body.widget .chat{grid-template-columns:minmax(0,1fr);gap:8px}
+body.widget .chat .side{position:static;display:flex;align-items:center;gap:10px}
+body.widget .chat .side .orb-stage{width:56px;height:56px;margin:0;flex:none}
+body.widget .chat .side .hint{text-align:left;margin:0;flex:1}
+body.widget .chat > div:last-child{display:flex;flex-direction:column;height:calc(100vh - 92px);min-height:300px}
+body.widget .msgs{flex:1;max-height:none;min-height:0}
+body.widget .msg{max-width:94%;font-size:14px;height:auto;flex:none}
+body.widget .w-only{text-decoration:none}
+body.widget #v-chat .btn.sm{padding:5px 9px;font-size:12.5px}
+body.widget .toast{bottom:70px}
 </style>
 </head>
 <body>
@@ -343,6 +364,7 @@ table.t th{color:var(--ink3);font-weight:500;font-size:12.5px}
         <div class="side">
           <div class="orb-stage" id="orb-chat" data-orb="chat" title="눌러서 말하기"></div>
           <div class="hint" id="chat-hint">허브 자료를 근거로 답해요</div>
+          <a class="btn sm w-only" href="./" target="_blank" rel="noopener" title="허브 전체 화면을 브라우저에서 열기">허브 ↗</a>
         </div>
         <div>
           <div class="msgs" id="msgs"></div>
@@ -434,8 +456,11 @@ var HUB = {
   url: "https://dbymktwxokbvfshlztrg.supabase.co",
   key: "sb_publishable_RHDgmlGV-m946etnPHfXaw_vy2u8uCp",
   mail: "@bldg.local",
-  version: "3단계 · 2026-10-01"
+  version: "3단계+ · 2026-10-01 (바탕화면 오브)"
 };
+var WIDGET = /[?&]w=1\b/.test(location.search);
+var WSTATE = { listen: "듣는 중", think: "생각 중", speak: "말하는 중", warn: "주의", alert: "긴급" };
+function widgetTitle(state) { document.title = "ORB 대화창" + (WSTATE[state] ? " · " + WSTATE[state] : ""); }
 var sb = window.supabase.createClient(HUB.url, HUB.key, { auth: { persistSession: true, storageKey: "orb-auth" } });
 
 var KIND = {
@@ -466,20 +491,40 @@ function store(k, v) { try { if (v === undefined) return localStorage.getItem(k)
 
 /* ── 오브 캐릭터 ───────────────────────────────────── */
 function orbSvg(uid) {
+  // 입체 구: 바탕 음영 + 안쪽 성운(천천히 회전) + 가장자리 빛(프레넬) + 아래 반사광 + 하이라이트 + 바닥 그림자
+  var u = String(uid);
   return '<svg class="orb" viewBox="0 0 240 240" data-state="idle" aria-hidden="true">' +
     '<defs>' +
-      '<radialGradient id="g' + uid + '" cx="38%" cy="32%" r="70%"><stop offset="0" stop-color="#EAF6FF"/><stop offset=".35" stop-color="var(--orb-a)"/><stop offset=".75" stop-color="var(--orb-b)"/><stop offset="1" stop-color="var(--orb-c)"/></radialGradient>' +
-      '<radialGradient id="h' + uid + '" cx="50%" cy="50%" r="50%"><stop offset=".55" stop-color="var(--orb-b)" stop-opacity=".55"/><stop offset="1" stop-color="var(--orb-b)" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="g' + u + '" cx="36%" cy="30%" r="78%"><stop offset="0" stop-color="#F6FCFF"/><stop offset=".22" stop-color="var(--orb-a)"/><stop offset=".58" stop-color="var(--orb-b)"/><stop offset=".86" stop-color="var(--orb-c)"/><stop offset="1" stop-color="#0E0A3A"/></radialGradient>' +
+      '<radialGradient id="h' + u + '" cx="50%" cy="50%" r="50%"><stop offset=".55" stop-color="var(--orb-b)" stop-opacity=".55"/><stop offset="1" stop-color="var(--orb-b)" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="r' + u + '" cx="50%" cy="50%" r="50%"><stop offset=".78" stop-color="#fff" stop-opacity="0"/><stop offset=".95" stop-color="#BFE6FF" stop-opacity=".28"/><stop offset="1" stop-color="#fff" stop-opacity=".55"/></radialGradient>' +
+      '<radialGradient id="e' + u + '" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#2A3163"/><stop offset="1" stop-color="#050818"/></radialGradient>' +
+      '<clipPath id="c' + u + '"><circle cx="120" cy="120" r="78"/></clipPath>' +
+      '<filter id="b' + u + '" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="7"/></filter>' +
+      '<filter id="s' + u + '" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2"/></filter>' +
     '</defs>' +
-    '<circle class="halo" cx="120" cy="120" r="112" fill="url(#h' + uid + ')"/>' +
+    '<ellipse class="shadow" cx="120" cy="214" rx="54" ry="9" fill="#000" opacity=".32" filter="url(#b' + u + ')"/>' +
+    '<circle class="halo" cx="120" cy="120" r="112" fill="url(#h' + u + ')"/>' +
     '<circle class="ring" cx="120" cy="120" r="84" fill="none" stroke="currentColor" stroke-width="3"/>' +
-    '<g class="core"><circle cx="120" cy="120" r="78" fill="url(#g' + uid + ')"/>' +
-      '<ellipse cx="96" cy="88" rx="22" ry="12" fill="#fff" opacity=".35" transform="rotate(-25 96 88)"/></g>' +
-    '<g class="eyes"><ellipse class="eye" cx="100" cy="116" rx="9" ry="13" fill="#0B1024"/><ellipse class="eye" cx="140" cy="116" rx="9" ry="13" fill="#0B1024"/>' +
+    '<g class="core">' +
+      '<circle cx="120" cy="120" r="78" fill="url(#g' + u + ')"/>' +
+      '<g clip-path="url(#c' + u + ')">' +
+        '<g class="nebula" filter="url(#b' + u + ')" opacity=".5" style="mix-blend-mode:screen">' +
+          '<ellipse cx="90" cy="150" rx="46" ry="16" fill="var(--orb-a)" transform="rotate(-24 90 150)"/>' +
+          '<ellipse cx="160" cy="95" rx="30" ry="11" fill="#C7B8FF" transform="rotate(35 160 95)"/>' +
+          '<ellipse cx="140" cy="170" rx="24" ry="9" fill="#9EF0FF"/></g>' +
+        '<ellipse cx="134" cy="186" rx="46" ry="16" fill="var(--orb-a)" opacity=".45" filter="url(#b' + u + ')"/>' +
+      '</g>' +
+      '<circle cx="120" cy="120" r="78" fill="url(#r' + u + ')"/>' +
+      '<ellipse cx="92" cy="80" rx="26" ry="13" fill="#fff" opacity=".6" filter="url(#s' + u + ')" transform="rotate(-32 92 80)"/>' +
+      '<circle cx="82" cy="72" r="4.5" fill="#fff" opacity=".95"/>' +
+    '</g>' +
+    '<g class="eyes"><ellipse class="eye" cx="100" cy="116" rx="9" ry="13" fill="url(#e' + u + ')"/><ellipse class="eye" cx="140" cy="116" rx="9" ry="13" fill="url(#e' + u + ')"/>' +
       '<circle cx="103" cy="111" r="3" fill="#fff"/><circle cx="143" cy="111" r="3" fill="#fff"/></g>' +
+    '<g class="face-low">' +
     '<path class="mouth" d="M104 142 Q120 156 136 142" fill="none" stroke="#0B1024" stroke-width="4" stroke-linecap="round"/>' +
     '<g class="wave" fill="#0B1024">' +
-      '<rect x="101" y="138" width="5" height="16" rx="2.5"/><rect x="109" y="138" width="5" height="16" rx="2.5"/><rect x="117" y="138" width="5" height="16" rx="2.5"/><rect x="125" y="138" width="5" height="16" rx="2.5"/><rect x="133" y="138" width="5" height="16" rx="2.5"/></g>' +
+      '<rect x="101" y="138" width="5" height="16" rx="2.5"/><rect x="109" y="138" width="5" height="16" rx="2.5"/><rect x="117" y="138" width="5" height="16" rx="2.5"/><rect x="125" y="138" width="5" height="16" rx="2.5"/><rect x="133" y="138" width="5" height="16" rx="2.5"/></g></g>' +
     '<g class="sats"><circle cx="120" cy="22" r="6" fill="var(--orb-a)"/><circle cx="205" cy="160" r="4.5" fill="var(--accent2)"/><circle cx="36" cy="160" r="5" fill="#fff" opacity=".8"/></g>' +
     '<text class="zz" x="168" y="70" font-size="22" font-weight="700" fill="var(--ink2)">z</text>' +
     '</svg>';
@@ -501,7 +546,9 @@ function mountOrbs() {
     var r = o.getBoundingClientRect(); if (!r.width) return;
     var dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
     var len = Math.max(1, Math.hypot(dx, dy)), k = Math.min(1, len / 400);
-    o.querySelector(".eyes").style.transform = "translate(" + (dx / len * 6 * k).toFixed(1) + "px," + (dy / len * 5 * k).toFixed(1) + "px)";
+    var tx = dx / len * 9 * k, ty = dy / len * 7 * k, sx = 1 - Math.abs(tx) / 60, sy = 1 - Math.abs(ty) / 60;
+    var tf = "translate(" + tx.toFixed(1) + "px," + ty.toFixed(1) + "px) scale(" + sx.toFixed(3) + "," + sy.toFixed(3) + ")";
+    o.querySelector(".eyes").style.transform = tf; o.querySelector(".face-low").style.transform = tf;
   });
 }
 function orb(state, which) {
@@ -510,8 +557,9 @@ function orb(state, which) {
     var o = ORBS[k]; if (!o) return;
     o.setAttribute("data-state", state);
     o.style.color = state === "alert" ? "var(--crit)" : state === "warn" ? "var(--warn)" : "var(--accent)";
-    if (state === "think" || state === "sleep") o.querySelector(".eyes").style.transform = "";
+    if (state === "think" || state === "sleep") { o.querySelector(".eyes").style.transform = ""; o.querySelector(".face-low").style.transform = ""; }
   });
+  if (WIDGET && (!which || which === "chat" || which === "login")) widgetTitle(state);
 }
 function isNight() { var h = new Date().getHours(); return h >= 22 || h < 7; }
 
@@ -519,6 +567,7 @@ function isNight() { var h = new Date().getHours(); return h >= 22 || h < 7; }
 var MFA = { factorId: null, enrolling: false };
 
 async function boot() {
+  if (WIDGET) { document.body.classList.add("widget"); widgetTitle("idle"); }
   mountOrbs();
   applyTheme(store("orb-theme") || "");
   orb("idle");
@@ -596,7 +645,8 @@ async function enterApp() {
   $("who").textContent = (S.me.name || S.me.login_id || "") + " 님";
   show("s-app");
   loadChat();
-  go(/^#(chat|settings|search|sites)$/.test(location.hash) ? location.hash.slice(1) : "home");
+  go(WIDGET ? "chat" : /^#(chat|settings|search|sites)$/.test(location.hash) ? location.hash.slice(1) : "home");
+  if (WIDGET && /[?&]listen=1\b/.test(location.search)) setTimeout(toggleMic, 350);
   await loadAll();
   registerSW();
   pushSync();
@@ -807,7 +857,7 @@ function renderHome() {
       '<div class="v">' + n + '<span style="font-size:12px;font-weight:400;color:var(--ink3)"> 건</span></div><div class="s' + (a.last_error ? " bad" : "") + '">' + esc(st) + "</div>" +
       (a.app_url ? '<a href="' + esc(a.app_url) + '" target="_blank" rel="noopener" style="font-size:12px">앱 열기 ↗</a>' : "") + "</div>";
   }).join("");
-  speakBriefing(true);
+  if (!WIDGET) speakBriefing(true);
 }
 function renderNotices() {
   var n = S.notices || [], box = $("l-ntc");
@@ -999,6 +1049,8 @@ function toggleMic() {
   try { rec.start(); } catch (e) { CHAT.rec = null; $("ask-mic").classList.remove("on"); toast("음성 인식을 시작하지 못했어요"); }
 }
 $("ask-mic").addEventListener("click", toggleMic);
+// F8 = 말로 묻기 (바탕화면 오브를 두 번 누르면 이 키를 보낸다)
+document.addEventListener("keydown", function (e) { if (e.key === "F8" && !$("s-app").classList.contains("hide")) { e.preventDefault(); if (S.view !== "chat") go("chat"); toggleMic(); } });
 $("orb-chat").addEventListener("click", toggleMic);
 
 // 주간·월간 리포트
