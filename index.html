@@ -278,6 +278,18 @@ body.widget .msg{max-width:94%;font-size:14px;height:auto;flex:none}
 body.widget .w-only{text-decoration:none}
 body.widget #v-chat .btn.sm{padding:5px 9px;font-size:12.5px}
 body.widget .toast{bottom:70px}
+/* 질문 하나 모드 (?w=2) — 오브 옆에서 펼쳐지는 질문창 */
+body.ask .chat .side{display:none}
+body.ask .chat > div:last-child{height:calc(100vh - 20px)}
+body.ask .ask{order:-1;margin:0 0 10px}
+body.ask .ask textarea{font-size:16px;min-height:52px}
+body.ask .sugg,body.ask #ask-tools,body.ask #ask-mic{display:none!important}
+body.ask .msgs{padding:2px}
+body.ask .msg.me{font-size:13.5px;opacity:.85}
+body.ask main{animation:unfold .42s cubic-bezier(.2,.9,.25,1.1) both;transform-origin:var(--ox,0%) 50%}
+@keyframes unfold{0%{opacity:0;transform:translateX(var(--dx,-40px)) scaleX(.55) scaleY(.92)}60%{opacity:1}100%{opacity:1;transform:none}}
+body.ask .msg.orb{animation:pop .35s ease both}
+@keyframes pop{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:none}}
 </style>
 </head>
 <body>
@@ -374,7 +386,7 @@ body.widget .toast{bottom:70px}
             <button class="btn mic" id="ask-mic" title="말로 묻기">🎤</button>
             <button class="btn primary" id="ask-send">보내기</button>
           </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+          <div id="ask-tools" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
             <button class="btn sm" id="rp-week">📄 주간 리포트</button>
             <button class="btn sm" id="rp-month">📄 월간 리포트</button>
             <button class="btn sm" id="rp-past">지난 리포트</button>
@@ -456,9 +468,10 @@ var HUB = {
   url: "https://dbymktwxokbvfshlztrg.supabase.co",
   key: "sb_publishable_RHDgmlGV-m946etnPHfXaw_vy2u8uCp",
   mail: "@bldg.local",
-  version: "3단계+ · 2026-10-01 (바탕화면 오브)"
+  version: "3단계+ · 2026-10-01 (바탕화면 오브 · 질문창)"
 };
-var WIDGET = /[?&]w=1\b/.test(location.search);
+var WIDGET = /[?&]w=[12]\b/.test(location.search);
+var ASK = /[?&]w=2\b/.test(location.search);   // 질문 하나 모드: 질문 하나에 답 하나, 기록 없음
 var WSTATE = { listen: "듣는 중", think: "생각 중", speak: "말하는 중", warn: "주의", alert: "긴급" };
 function widgetTitle(state) { document.title = "ORB 대화창" + (WSTATE[state] ? " · " + WSTATE[state] : ""); }
 var sb = window.supabase.createClient(HUB.url, HUB.key, { auth: { persistSession: true, storageKey: "orb-auth" } });
@@ -568,6 +581,13 @@ var MFA = { factorId: null, enrolling: false };
 
 async function boot() {
   if (WIDGET) { document.body.classList.add("widget"); widgetTitle("idle"); }
+  if (ASK) {
+    document.body.classList.add("ask");
+    var side = /[?&]side=left\b/.test(location.search) ? "left" : "right";   // 창이 오브의 어느 쪽에 있는지
+    document.documentElement.style.setProperty("--ox", side === "left" ? "100%" : "0%");
+    document.documentElement.style.setProperty("--dx", side === "left" ? "40px" : "-40px");
+    $("ask-q").placeholder = "무엇이든 물어보세요 — 예: 이번 주 점검 일정은?";
+  }
   mountOrbs();
   applyTheme(store("orb-theme") || "");
   orb("idle");
@@ -931,9 +951,10 @@ var CHAT = { msgs: [], busy: false, refs: {}, ready: null, rec: null };
 var SUGG = ["오늘 뭐 챙겨야 해?", "이번 주 점검 일정 알려줘", "올해 산업재해 몇 건이야?", "교육 보고 안 된 차수 있어?", "인원 부족한 사업장은?", "다음 주 화요일 T-타워 점검 잡아줘"];
 
 function loadChat() {
+  if (ASK) { CHAT.msgs = []; return; }
   try { var v = JSON.parse(store("orb-chat") || "[]"); if (Array.isArray(v)) CHAT.msgs = v.slice(-30); } catch (e) { CHAT.msgs = []; }
 }
-function saveChat() { store("orb-chat", JSON.stringify(CHAT.msgs.slice(-30))); }
+function saveChat() { if (!ASK) store("orb-chat", JSON.stringify(CHAT.msgs.slice(-30))); }
 
 // 답 본문: [n] 인용 → 칩, "- " 줄 → 목록, ## → 제목 (리포트)
 function fmtAnswer(text, refs) {
@@ -958,7 +979,7 @@ function refChip(r) {
 function renderChat() {
   var box = $("msgs");
   if (!CHAT.msgs.length) {
-    box.innerHTML = '<div class="msg orb">안녕하세요, 오브예요. 허브에 모인 자료를 찾아서 근거와 함께 답해 드릴게요. 무엇이든 물어보세요.</div>';
+    box.innerHTML = ASK ? '<div class="empty" style="text-align:center;margin-top:24px">무엇이든 물어보세요. 이 질문 하나에만 답해요.</div>' : '<div class="msg orb">안녕하세요, 오브예요. 허브에 모인 자료를 찾아서 근거와 함께 답해 드릴게요. 무엇이든 물어보세요.</div>';
   } else {
     box.innerHTML = CHAT.msgs.map(function (m, i) {
       if (m.role === "user") return '<div class="msg me">' + esc(m.content) + "</div>";
@@ -999,16 +1020,18 @@ async function sendAsk(text) {
   var q = (text != null ? text : $("ask-q").value).trim();
   if (!q || CHAT.busy) return;
   $("ask-q").value = ""; autoGrow();
+  if (ASK) CHAT.msgs = [];   // 질문 하나 모드: 앞선 문답은 지우고 이 질문에만 답한다
   CHAT.msgs.push({ role: "user", content: q, at: Date.now() });
   CHAT.busy = true; renderChat(); orb("think", "chat"); orb("think", "mini");
   try {
-    var history = CHAT.msgs.slice(0, -1).filter(function (m) { return !m.err; }).slice(-8).map(function (m) { return { role: m.role, content: m.content }; });
+    var history = ASK ? [] : CHAT.msgs.slice(0, -1).filter(function (m) { return !m.err; }).slice(-8).map(function (m) { return { role: m.role, content: m.content }; });
     var d = await askOrb({ action: "ask", q: q, history: history });
     CHAT.msgs.push({ role: "assistant", content: d.answer, refs: d.refs || [], proposals: d.proposals || [], usage: d.usage, at: Date.now() });
     CHAT.busy = false; saveChat(); renderChat();
     var warned = /주의|긴급|지연|부족|미기재|없어요/.test(d.answer);
     orb(warned ? "warn" : "happy", "chat"); orb("idle", "mini");
     if (store("orb-voice") === "1") sayText(d.answer);
+    if (ASK) $("ask-q").focus();
   } catch (err) {
     CHAT.busy = false;
     CHAT.msgs.push({ role: "assistant", content: "답하지 못했어요 — " + (err.message || err), err: true, at: Date.now() });
