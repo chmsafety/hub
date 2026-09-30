@@ -191,6 +191,36 @@ table.t th{color:var(--ink3);font-weight:500;font-size:12.5px}
 @media (max-width:640px){.app-card .body{grid-template-columns:minmax(0,1fr)}}
 .switch{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink2);cursor:pointer}
 
+/* ── 오브와 대화 ─────────────────────── */
+.chat{display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:760px){.chat{grid-template-columns:minmax(0,1fr)}.chat .side{display:flex;gap:12px;align-items:center}.chat .side .orb-stage{width:90px;height:90px}}
+.chat .side{position:sticky;top:70px}
+.chat .side .orb-stage{width:180px;height:180px;margin:0 auto}
+.chat .side .hint{font-size:12.5px;color:var(--ink3);text-align:center;margin-top:6px}
+.msgs{display:flex;flex-direction:column;gap:10px;min-height:200px;max-height:calc(100vh - 260px);overflow:auto;padding:4px 2px;scroll-behavior:smooth}
+.msg{max-width:88%;border-radius:16px;padding:11px 14px;font-size:14.5px;white-space:pre-wrap;word-break:break-word;line-height:1.55}
+.msg.me{align-self:flex-end;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-bottom-right-radius:6px}
+.msg.orb{align-self:flex-start;background:var(--card);border:1px solid var(--line);border-bottom-left-radius:6px}
+.msg.orb.bad{border-color:var(--crit);color:var(--crit)}
+.msg.orb h2{font-size:15px;margin:10px 0 4px}
+.msg.orb h2:first-child{margin-top:0}
+.msg .cite{display:inline-block;font-size:11px;padding:0 6px;border-radius:10px;background:var(--chip);color:var(--accent);cursor:pointer;vertical-align:1px;margin:0 1px}
+.msg .cite:hover{filter:brightness(1.15)}
+.refs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.ref{border:1px solid var(--line);background:var(--card2);border-radius:12px;padding:4px 10px;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;max-width:100%}
+.ref b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px}
+.ref .dot{width:8px;height:8px;border-radius:50%;flex:none}
+.ref:hover{border-color:var(--accent)}
+.msg .meta{font-size:11.5px;color:var(--ink3);margin-top:6px}
+.dots span{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ink3);margin:0 2px;animation:blink 1.2s infinite}
+.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+.ask{display:flex;gap:8px;margin-top:10px;align-items:flex-end}
+.ask textarea{flex:1;resize:none;min-height:46px;max-height:140px;padding:11px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);outline:none;font-size:15px;line-height:1.4}
+.ask textarea:focus{border-color:var(--accent)}
+.ask .btn{height:46px;border-radius:14px}
+.ask .btn.mic.on{background:var(--crit);color:#fff;animation:halo 1.2s ease-in-out infinite}
+.sugg{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+
 /* ── 창 ────────────────────────────── */
 .modal{position:fixed;inset:0;background:rgba(5,8,20,.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
 .modal .box{background:var(--card);border:1px solid var(--line);border-radius:18px;max-width:560px;width:100%;max-height:86vh;overflow:auto;padding:18px;box-shadow:var(--shadow)}
@@ -251,6 +281,7 @@ table.t th{color:var(--ink3);font-weight:500;font-size:12.5px}
     <div class="brand"><svg class="mini-orb" viewBox="0 0 240 240" data-orb="mini"></svg>ORB <small>CHM 통합정보</small></div>
     <nav class="nav" id="nav">
       <button data-v="home" class="on">홈</button>
+      <button data-v="chat">대화</button>
       <button data-v="search">검색</button>
       <button data-v="sites">사업장</button>
       <button data-v="settings">설정</button>
@@ -274,6 +305,30 @@ table.t th{color:var(--ink3);font-weight:500;font-size:12.5px}
         <div class="card"><h3>최근 바뀐 것 <span class="n" id="n-chg"></span></h3><div class="list" id="l-chg"></div></div>
       </div>
       <div class="card" style="margin-top:14px"><h3>연결된 앱 <span class="n" id="n-apps"></span></h3><div class="tiles" id="tiles"></div></div>
+    </section>
+
+    <!-- 오브와 대화 -->
+    <section id="v-chat" class="hide">
+      <div class="chat">
+        <div class="side">
+          <div class="orb-stage" id="orb-chat" data-orb="chat" title="눌러서 말하기"></div>
+          <div class="hint" id="chat-hint">허브 자료를 근거로 답해요</div>
+        </div>
+        <div>
+          <div class="msgs" id="msgs"></div>
+          <div class="sugg" id="sugg"></div>
+          <div class="ask">
+            <textarea id="ask-q" rows="1" placeholder="오브에게 물어보세요 — 예: 이번 주 점검 일정은? / T-타워 올해 교육 어땠어?"></textarea>
+            <button class="btn mic" id="ask-mic" title="말로 묻기">🎤</button>
+            <button class="btn primary" id="ask-send">보내기</button>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+            <button class="btn sm" id="rp-week">📄 주간 리포트</button>
+            <button class="btn sm" id="rp-month">📄 월간 리포트</button>
+            <button class="btn sm" id="chat-clear">대화 지우기</button>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- 검색 -->
@@ -303,6 +358,13 @@ table.t th{color:var(--ink3);font-weight:500;font-size:12.5px}
           <p style="margin:0 0 8px;color:var(--ink3);font-size:13px">앱에서 온 사업장 이름이 사업장 관리 명단과 바로 맞지 않은 것들이에요. 한 번 연결해 두면 다음부터 자동으로 묶입니다.</p>
           <div class="tscroll"><table class="t" id="t-un"></table></div></div>
         <div class="card"><h3>수집 기록 <span class="n">최근 40회</span></h3><div class="tscroll"><table class="t" id="t-runs"></table></div></div>
+        <div class="card"><h3>오브와 대화 <span class="n" id="ai-state"></span></h3>
+          <p style="margin:0 0 8px;color:var(--ink3);font-size:13px">Anthropic API 키가 있어야 오브가 대화하고 리포트를 씁니다. 키는 서버에만 저장되고 화면으로 다시 내려오지 않아요.</p>
+          <label class="field"><span>API 키 (sk-ant-…)</span><input id="ai-key" type="password" autocomplete="off" placeholder="새 키를 넣을 때만 입력"></label>
+          <label class="field"><span>모델</span><input id="ai-model" autocomplete="off" placeholder="claude-sonnet-5-5"></label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm primary" id="ai-save">저장</button><button class="btn sm" id="ai-test">연결 시험</button></div>
+          <div class="err" id="ai-err"></div>
+        </div>
         <div class="card"><h3>화면</h3>
           <label class="switch"><input type="checkbox" id="c-voice"> 브리핑을 목소리로 읽어 주기</label><br>
           <label class="switch" style="margin-top:8px">테마
@@ -321,14 +383,14 @@ table.t th{color:var(--ink3);font-weight:500;font-size:12.5px}
 <script>
 "use strict";
 /* ================================================================
- *  ORB — CHM 통합정보 비서 · 1단계 (2026-09-30)
+ *  ORB — CHM 통합정보 비서 · 2단계 (2026-10-01) — 오브와 대화 · 리포트 추가
  *  빌딩정보 Supabase 프로젝트의 hub_ 표를 읽는다. 본인(허브 주인) + 2단계 인증 전용.
  * ================================================================ */
 var HUB = {
   url: "https://dbymktwxokbvfshlztrg.supabase.co",
   key: "sb_publishable_RHDgmlGV-m946etnPHfXaw_vy2u8uCp",
   mail: "@bldg.local",
-  version: "1단계 · 2026-09-30"
+  version: "2단계 · 2026-10-01"
 };
 var sb = window.supabase.createClient(HUB.url, HUB.key, { auth: { persistSession: true, storageKey: "orb-auth" } });
 
@@ -390,7 +452,7 @@ function mountOrbs() {
   });
   // 눈이 마우스를 따라본다
   document.addEventListener("pointermove", function (e) {
-    var o = ORBS.home; if (!o || S.view !== "home") return;
+    var o = S.view === "chat" ? ORBS.chat : ORBS.home; if (!o || (S.view !== "home" && S.view !== "chat")) return;
     var st = o.getAttribute("data-state"); if (st === "think" || st === "sleep") return;
     var r = o.getBoundingClientRect(); if (!r.width) return;
     var dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
@@ -399,7 +461,7 @@ function mountOrbs() {
   });
 }
 function orb(state, which) {
-  ["home", "mini", "login"].forEach(function (k) {
+  ["home", "mini", "login", "chat"].forEach(function (k) {
     if (which && which !== k) return;
     var o = ORBS[k]; if (!o) return;
     o.setAttribute("data-state", state);
@@ -489,6 +551,7 @@ async function enterApp() {
   S.me = w.data;
   $("who").textContent = (S.me.name || S.me.login_id || "") + " 님";
   show("s-app");
+  loadChat();
   go("home");
   await loadAll();
 }
@@ -545,9 +608,10 @@ $("b-collect").addEventListener("click", async function () {
 /* ── 화면 전환 ─────────────────────────────────────── */
 function go(v) {
   S.view = v;
-  ["home", "search", "sites", "settings"].forEach(function (x) { $("v-" + x).classList.toggle("hide", x !== v); });
+  ["home", "chat", "search", "sites", "settings"].forEach(function (x) { $("v-" + x).classList.toggle("hide", x !== v); });
   document.querySelectorAll("#nav button").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-v") === v); });
   if (v === "search") { renderSearch(); setTimeout(function () { $("q").focus(); }, 30); }
+  if (v === "chat") { renderChat(); setTimeout(function () { $("ask-q").focus(); }, 30); }
   if (v === "settings") renderSettings();
   if (v === "sites") renderSites();
   window.scrollTo(0, 0);
@@ -639,7 +703,8 @@ function speakBriefing(auto) {
     return;
   }
   box.innerHTML = '<div class="hi">' + esc(b.hi) + '</div><ul id="bl"></ul><div class="tools">' +
-    '<button class="btn sm" id="bb-speak">🔊 읽어 주기</button><button class="btn sm" id="bb-search">검색하기</button></div>';
+    '<button class="btn sm primary" id="bb-ask">💬 물어보기</button><button class="btn sm" id="bb-speak">🔊 읽어 주기</button><button class="btn sm" id="bb-search">검색하기</button></div>';
+  $("bb-ask").onclick = function () { go("chat"); };
   $("bb-speak").onclick = function () { say(b); };
   $("bb-search").onclick = function () { go("search"); };
   var ul = $("bl"), li = 0, ch = 0, cur = null;
@@ -735,6 +800,183 @@ function modal(html) {
   });
 }
 document.addEventListener("keydown", function (e) { if (e.key === "Escape") $("modal-root").innerHTML = ""; });
+
+/* ── 오브와 대화 (2단계) ─────────────────────────────── */
+var CHAT = { msgs: [], busy: false, refs: {}, ready: null, rec: null };
+var SUGG = ["오늘 뭐 챙겨야 해?", "이번 주 점검 일정 알려줘", "올해 산업재해 몇 건이야?", "교육 보고 안 된 차수 있어?", "인원 부족한 사업장은?", "마감 지난 업무 있어?"];
+
+function loadChat() {
+  try { var v = JSON.parse(store("orb-chat") || "[]"); if (Array.isArray(v)) CHAT.msgs = v.slice(-30); } catch (e) { CHAT.msgs = []; }
+}
+function saveChat() { store("orb-chat", JSON.stringify(CHAT.msgs.slice(-30))); }
+
+// 답 본문: [n] 인용 → 칩, "- " 줄 → 목록, ## → 제목 (리포트)
+function fmtAnswer(text, refs) {
+  var byN = {}; (refs || []).forEach(function (r) { byN[r.n] = r; });
+  var lines = String(text || "").split("\n"), out = [], inList = false;
+  lines.forEach(function (l) {
+    var h = l.match(/^#{1,3}\s+(.*)$/), li = l.match(/^\s*[-•]\s+(.*)$/);
+    var body = esc(h ? h[1] : li ? li[1] : l).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
+      .replace(/\[(\d+)\]/g, function (m, n) { var r = byN[n]; return r ? '<span class="cite" data-ref="' + n + '" title="' + esc(r.title) + '">' + n + "</span>" : ""; });
+    if (li) { if (!inList) { out.push("<ul style=\"margin:4px 0;padding-left:18px\">"); inList = true; } out.push("<li>" + body + "</li>"); return; }
+    if (inList) { out.push("</ul>"); inList = false; }
+    if (h) out.push("<h2>" + body + "</h2>"); else if (l.trim()) out.push(body + "<br>"); else out.push("");
+  });
+  if (inList) out.push("</ul>");
+  return out.join("").replace(/(<br>)+$/, "");
+}
+function refChip(r) {
+  var a = appOf(r.app_id);
+  var k = esc(r.app_id + "\u0001" + r.kind + "\u0001" + r.ext_id);
+  return '<span class="ref" data-n="' + Number(r.n) + '" data-rk="' + k + '" data-url="' + esc(r.url || a.app_url || "") + '"><span class="dot" style="background:' + esc(a.color) + '"></span><b>' + esc(r.title) + "</b><span style=\"color:var(--ink3)\">" + esc((KIND[r.kind] || r.kind) + (r.date ? " · " + md(r.date) : "")) + "</span></span>";
+}
+function renderChat() {
+  var box = $("msgs");
+  if (!CHAT.msgs.length) {
+    box.innerHTML = '<div class="msg orb">안녕하세요, 오브예요. 허브에 모인 자료를 찾아서 근거와 함께 답해 드릴게요. 무엇이든 물어보세요.</div>';
+  } else {
+    box.innerHTML = CHAT.msgs.map(function (m, i) {
+      if (m.role === "user") return '<div class="msg me">' + esc(m.content) + "</div>";
+      var refs = m.refs || [];
+      return '<div class="msg orb' + (m.err ? " bad" : "") + '">' + (m.err ? esc(m.content) : fmtAnswer(m.content, refs)) +
+        (refs.length ? '<div class="refs">' + refs.map(refChip).join("") + "</div>" : "") +
+        (m.usage ? '<div class="meta">' + (m.usage.tools ? "허브 검색 " + m.usage.tools + "회 · " : "") + Math.round((m.usage.ms || 0) / 100) / 10 + "초" + (m.at ? " · " + new Date(m.at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) : "") + "</div>" : "") + "</div>";
+    }).join("");
+  }
+  if (CHAT.busy) box.innerHTML += '<div class="msg orb" id="msg-wait"><span class="dots"><span></span><span></span><span></span></span> 허브를 찾아보는 중…</div>';
+  box.scrollTop = box.scrollHeight;
+  $("sugg").innerHTML = CHAT.msgs.length ? "" : SUGG.map(function (s) { return '<button class="chip" data-s="' + esc(s) + '">' + esc(s) + "</button>"; }).join("");
+  $("ask-send").disabled = CHAT.busy;
+  if (!CHAT.busy && S.view === "chat") orb("idle", "chat");
+}
+$("sugg").addEventListener("click", function (e) { var b = e.target.closest("[data-s]"); if (b) { $("ask-q").value = b.getAttribute("data-s"); sendAsk(); } });
+$("msgs").addEventListener("click", function (e) {
+  var c = e.target.closest(".cite"); var r = e.target.closest(".ref");
+  if (c) r = c.closest(".msg").querySelector('.ref[data-n="' + c.getAttribute("data-ref") + '"]');
+  if (!r) return;
+  var it = findItem(r.getAttribute("data-rk"));
+  if (it) return openItem(it);
+  var u = r.getAttribute("data-url"); if (u) window.open(u, "_blank", "noopener");
+});
+
+async function askOrb(body) {
+  var r = await sb.functions.invoke("hub-ask", { body: body });
+  if (r.error) {
+    var msg = r.error.message || String(r.error);
+    try { var ctx = r.error.context; if (ctx && ctx.json) { var j = await ctx.json(); if (j && j.error) msg = j.error; } } catch (e) { /* 본문 없음 */ }
+    throw new Error(msg);
+  }
+  if (r.data && r.data.error) throw new Error(r.data.error);
+  return r.data;
+}
+async function sendAsk(text) {
+  var q = (text != null ? text : $("ask-q").value).trim();
+  if (!q || CHAT.busy) return;
+  $("ask-q").value = ""; autoGrow();
+  CHAT.msgs.push({ role: "user", content: q, at: Date.now() });
+  CHAT.busy = true; renderChat(); orb("think", "chat"); orb("think", "mini");
+  try {
+    var history = CHAT.msgs.slice(0, -1).filter(function (m) { return !m.err; }).slice(-8).map(function (m) { return { role: m.role, content: m.content }; });
+    var d = await askOrb({ action: "ask", q: q, history: history });
+    CHAT.msgs.push({ role: "assistant", content: d.answer, refs: d.refs || [], usage: d.usage, at: Date.now() });
+    CHAT.busy = false; saveChat(); renderChat();
+    var warned = /주의|긴급|지연|부족|미기재|없어요/.test(d.answer);
+    orb(warned ? "warn" : "happy", "chat"); orb("idle", "mini");
+    if (store("orb-voice") === "1") sayText(d.answer);
+  } catch (err) {
+    CHAT.busy = false;
+    CHAT.msgs.push({ role: "assistant", content: "답하지 못했어요 — " + (err.message || err), err: true, at: Date.now() });
+    saveChat(); renderChat(); orb("warn", "chat"); orb("idle", "mini");
+  }
+}
+function sayText(t) {
+  try {
+    if (!("speechSynthesis" in window)) return;
+    speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(String(t).replace(/\[\d+\]/g, "").replace(/^#+\s*/gm, "").replace(/\*\*/g, ""));
+    u.lang = "ko-KR"; u.rate = 1.05;
+    var v = speechSynthesis.getVoices().filter(function (x) { return /ko/i.test(x.lang); })[0]; if (v) u.voice = v;
+    u.onstart = function () { orb("speak", "chat"); }; u.onend = function () { orb("idle", "chat"); };
+    speechSynthesis.speak(u);
+  } catch (e) { /* 읽어 주기 실패는 조용히 */ }
+}
+function autoGrow() { var t = $("ask-q"); t.style.height = "auto"; t.style.height = Math.min(140, t.scrollHeight) + "px"; }
+$("ask-q").addEventListener("input", autoGrow);
+$("ask-q").addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendAsk(); } });
+$("ask-send").addEventListener("click", function () { sendAsk(); });
+$("chat-clear").addEventListener("click", function () { CHAT.msgs = []; saveChat(); renderChat(); });
+
+// 말로 묻기 (브라우저 음성 인식)
+function toggleMic() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return toast("이 브라우저는 음성 입력을 지원하지 않아요 (크롬·엣지에서 되어요)");
+  if (CHAT.rec) { try { CHAT.rec.stop(); } catch (e) { /* 이미 멈춤 */ } return; }
+  var rec = new SR(); rec.lang = "ko-KR"; rec.interimResults = true; rec.maxAlternatives = 1;
+  var finalText = "";
+  rec.onresult = function (e) {
+    var t = ""; for (var i = e.resultIndex; i < e.results.length; i++) { t += e.results[i][0].transcript; if (e.results[i].isFinal) finalText += e.results[i][0].transcript; }
+    $("ask-q").value = finalText || t; autoGrow();
+  };
+  rec.onerror = function (e) { if (e.error !== "aborted" && e.error !== "no-speech") toast("음성 인식 오류: " + e.error); };
+  rec.onend = function () { CHAT.rec = null; $("ask-mic").classList.remove("on"); $("chat-hint").textContent = "허브 자료를 근거로 답해요"; orb("idle", "chat"); if ((finalText || $("ask-q").value).trim()) sendAsk(); };
+  CHAT.rec = rec; $("ask-mic").classList.add("on"); $("chat-hint").textContent = "듣고 있어요… 말이 끝나면 바로 보낼게요"; orb("listen", "chat");
+  try { rec.start(); } catch (e) { CHAT.rec = null; $("ask-mic").classList.remove("on"); toast("음성 인식을 시작하지 못했어요"); }
+}
+$("ask-mic").addEventListener("click", toggleMic);
+$("orb-chat").addEventListener("click", toggleMic);
+
+// 주간·월간 리포트
+async function makeReport(period) {
+  if (CHAT.busy) return;
+  CHAT.msgs.push({ role: "user", content: (period === "month" ? "이번 달" : "이번 주") + " 리포트 써 줘", at: Date.now() });
+  CHAT.busy = true; renderChat(); orb("think", "chat"); busy(true);
+  try {
+    var d = await askOrb({ action: "report", period: period });
+    CHAT.msgs.push({ role: "assistant", content: d.answer, refs: d.refs || [], usage: d.usage, report: { period: period, from: d.from, to: d.to }, at: Date.now() });
+    CHAT.busy = false; saveChat(); renderChat(); orb("happy", "chat");
+    var last = $("msgs").lastElementChild;
+    if (last) last.insertAdjacentHTML("beforeend", '<div style="display:flex;gap:6px;margin-top:8px"><button class="btn sm" data-copy>복사</button><button class="btn sm" data-dl>파일로 받기 (.md)</button></div>');
+    var md_ = "# " + (period === "month" ? "월간" : "주간") + " 리포트 " + d.from + " ~ " + d.to + "\n\n" + d.answer.replace(/\[(\d+)\]/g, "") + "\n\n— ORB · " + new Date().toLocaleString("ko-KR");
+    last.querySelector("[data-copy]").onclick = function () { navigator.clipboard.writeText(md_).then(function () { toast("복사했어요"); }); };
+    last.querySelector("[data-dl]").onclick = function () {
+      var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([md_], { type: "text/markdown" }));
+      a.download = "ORB-" + (period === "month" ? "월간" : "주간") + "-" + d.to + ".md"; a.click();
+    };
+  } catch (err) {
+    CHAT.busy = false;
+    CHAT.msgs.push({ role: "assistant", content: "리포트를 만들지 못했어요 — " + (err.message || err), err: true, at: Date.now() });
+    saveChat(); renderChat(); orb("warn", "chat");
+  } finally { busy(false); }
+}
+$("rp-week").addEventListener("click", function () { makeReport("week"); });
+$("rp-month").addEventListener("click", function () { makeReport("month"); });
+
+// 설정 › 오브와 대화
+async function renderAiSettings() {
+  $("ai-err").textContent = "";
+  try {
+    var d = await askOrb({ action: "status" });
+    $("ai-state").textContent = d.hasKey ? "키 저장됨 (…" + d.keyTail + ") · " + d.model : "키 없음";
+    $("ai-model").placeholder = d.model || "claude-sonnet-5-5";
+  } catch (err) { $("ai-state").textContent = "확인 실패"; $("ai-err").textContent = err.message || String(err); }
+}
+$("ai-save").addEventListener("click", async function () {
+  var k = $("ai-key").value.trim(), m = $("ai-model").value.trim(); $("ai-err").textContent = "";
+  if (!k && !m) return toast("바꿀 것이 없어요");
+  try {
+    if (k) { await askOrb({ action: "key", key: k }); $("ai-key").value = ""; }
+    if (m) { await askOrb({ action: "model", model: m }); $("ai-model").value = ""; }
+    toast("저장했어요"); renderAiSettings();
+  } catch (err) { $("ai-err").textContent = err.message || String(err); }
+});
+$("ai-test").addEventListener("click", async function () {
+  var b = this; b.disabled = true; b.textContent = "시험 중…"; $("ai-err").textContent = "";
+  try {
+    var d = await askOrb({ action: "ask", q: "연결 시험이야. 허브에 연결된 앱 수와 오늘 날짜만 한 줄로 말해 줘." });
+    toast("✓ " + d.answer.slice(0, 60)); $("ai-err").style.color = "var(--good)"; $("ai-err").textContent = "✓ " + d.answer;
+  } catch (err) { $("ai-err").style.color = ""; $("ai-err").textContent = err.message || String(err); }
+  finally { b.disabled = false; b.textContent = "연결 시험"; }
+});
 
 /* ── 검색 ──────────────────────────────────────────── */
 var Q = { app: "", when: "" };
@@ -859,6 +1101,7 @@ function openSite(id) {
 /* ── 설정 ──────────────────────────────────────────── */
 var ADAPTERS = [["hub", "표준 커넥터 (hub-1)"], ["team_json", "업무관리 data.json"], ["edu_cal", "교육관리 eduCal (일정만)"], ["safe_cal", "안전보건 schedCal (일정만)"], ["local_bldg", "빌딩정보 DB 직접"], ["local_site", "사업장 관리 DB 직접"]];
 async function renderSettings() {
+  renderAiSettings();
   $("apps-edit").innerHTML = S.apps.map(appCard).join("") || '<div class="empty">연결된 앱이 없어요</div>';
   var r = await Promise.all([sb.rpc("hub_unmatched"), sb.from("hub_runs").select("*").order("id", { ascending: false }).limit(40)]);
   var un = r[0].data || [];
