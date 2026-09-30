@@ -473,7 +473,7 @@ var HUB = {
 var WIDGET = /[?&]w=[12]\b/.test(location.search);
 var ASK = /[?&]w=2\b/.test(location.search);   // 질문 하나 모드: 질문 하나에 답 하나, 기록 없음
 var WSTATE = { listen: "듣는 중", think: "생각 중", speak: "말하는 중", warn: "주의", alert: "긴급" };
-function widgetTitle(state) { document.title = "ORB 대화창" + (WSTATE[state] ? " · " + WSTATE[state] : ""); }
+function widgetTitle(state) { document.title = (ASK ? "ORB 질문" : "ORB 대화창") + (WSTATE[state] ? " · " + WSTATE[state] : ""); }
 var sb = window.supabase.createClient(HUB.url, HUB.key, { auth: { persistSession: true, storageKey: "orb-auth" } });
 
 var KIND = {
@@ -704,6 +704,7 @@ async function loadAll() {
     S.siteById = {}; S.sites.forEach(function (s) { S.siteById[s.id] = s; });
     S.loadedAt = Date.now();
     render();
+    if (WIDGET) orb("idle");   // 위젯·질문창은 브리핑을 안 하므로 여기서 평소 상태로
   } catch (err) {
     orb("warn"); toast("불러오기 실패: " + (err.message || err));
     if (/JWT|aal|permission/i.test(String(err.message))) logout();
