@@ -278,14 +278,23 @@ body.widget .msg{max-width:94%;font-size:14px;height:auto;flex:none}
 body.widget .w-only{text-decoration:none}
 body.widget #v-chat .btn.sm{padding:5px 9px;font-size:12.5px}
 body.widget .toast{bottom:70px}
-/* 질문 하나 모드 (?w=2) — 오브 옆에서 펼쳐지는 질문창 */
+/* 질문 하나 모드 (?w=2) — 오브 옆에서 펼쳐지는 질문창 · 회색 반투명 느낌 */
+body.ask{--bg:#30343E;--bg2:#3A3F4B;--card:rgba(255,255,255,.08);--card2:rgba(255,255,255,.13);--line:rgba(255,255,255,.16);--chip:rgba(255,255,255,.14);--ink:#F2F4FA;--ink2:#C9CEDC;--ink3:#9AA1B4;--shadow:0 6px 20px rgba(0,0,0,.25);
+  background:linear-gradient(160deg,#3A3F4B,#262A33);color:var(--ink);overflow:hidden;height:100vh;min-height:0}
+body.ask main{padding:14px 0 10px;height:100vh}
 body.ask .chat .side{display:none}
-body.ask .chat > div:last-child{height:calc(100vh - 20px)}
-body.ask .ask{order:-1;margin:0 0 10px}
-body.ask .ask textarea{font-size:16px;min-height:52px}
+body.ask .chat > div:last-child{height:calc(100vh - 24px);min-height:0}
+body.ask .ask{order:-1;margin:0 0 12px;flex:none}
+body.ask .ask textarea{font-size:16px;min-height:50px;overflow:hidden;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:var(--ink)}
+body.ask .ask textarea::placeholder{color:var(--ink3)}
+body.ask .ask .btn{height:50px}
 body.ask .sugg,body.ask #ask-tools,body.ask #ask-mic{display:none!important}
-body.ask .msgs{padding:2px}
-body.ask .msg.me{font-size:13.5px;opacity:.85}
+body.ask .msgs{padding:2px;flex:1;min-height:0;overflow:auto;gap:12px}
+body.ask .msg{font-size:15px;line-height:1.6}
+body.ask .msg.me{font-size:14px;opacity:.9}
+body.ask .msg.orb{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.14)}
+body.ask .empty{color:var(--ink3)}
+body.ask ::-webkit-scrollbar{width:8px}body.ask ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:4px}
 body.ask main{animation:unfold .42s cubic-bezier(.2,.9,.25,1.1) both;transform-origin:var(--ox,0%) 50%}
 @keyframes unfold{0%{opacity:0;transform:translateX(var(--dx,-40px)) scaleX(.55) scaleY(.92)}60%{opacity:1}100%{opacity:1;transform:none}}
 body.ask .msg.orb{animation:pop .35s ease both}
@@ -586,7 +595,7 @@ async function boot() {
     var side = /[?&]side=left\b/.test(location.search) ? "left" : "right";   // 창이 오브의 어느 쪽에 있는지
     document.documentElement.style.setProperty("--ox", side === "left" ? "100%" : "0%");
     document.documentElement.style.setProperty("--dx", side === "left" ? "40px" : "-40px");
-    $("ask-q").placeholder = "무엇이든 물어보세요 — 예: 이번 주 점검 일정은?";
+    $("ask-q").placeholder = "무엇이든 물어보세요";
   }
   mountOrbs();
   applyTheme(store("orb-theme") || "");
