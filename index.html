@@ -279,27 +279,25 @@ body.widget .w-only{text-decoration:none}
 body.widget #v-chat .btn.sm{padding:5px 9px;font-size:12.5px}
 body.widget .toast{bottom:70px}
 /* 질문 하나 모드 (?w=2) — 오브 옆에서 펼쳐지는 질문창 · 회색 반투명 느낌 */
-body.ask{--bg:#30343E;--bg2:#3A3F4B;--card:rgba(255,255,255,.08);--card2:rgba(255,255,255,.13);--line:rgba(255,255,255,.16);--chip:rgba(255,255,255,.14);--ink:#F2F4FA;--ink2:#C9CEDC;--ink3:#9AA1B4;--shadow:0 6px 20px rgba(0,0,0,.25);
-  background:linear-gradient(160deg,#6A6F7A,#535761);color:var(--ink);overflow:hidden;height:100vh;min-height:0;display:block}
+body.ask{--card:#FFFFFF;--card2:#F2F3F6;--line:#D4D7DE;--chip:#E9EBEF;--ink:#20242E;--ink2:#454B59;--ink3:#767C8A;--shadow:0 4px 14px rgba(0,0,0,.08);
+  background:#E4E6EB;color:var(--ink);overflow:hidden;height:100vh;min-height:0;display:block}
 body.ask #s-app{width:100%}
-/* 창 뒤 바탕화면을 흐리게 깐 뒤 회색을 덧씌움 → 반투명 유리 느낌 */
-body.ask.glass{background:linear-gradient(rgba(108,113,124,.46),rgba(92,96,106,.54)),var(--glass) center/cover no-repeat fixed}
 body.ask main{padding:0;height:100vh}
-body.ask .wrap{max-width:none;padding:76px 14px 0}
+body.ask .wrap{max-width:none;padding:38px 14px 0}
 body.ask .chat{grid-template-columns:minmax(0,1fr)}
 body.ask .chat .side{display:none}
-body.ask .chat > div:last-child{height:calc(100vh - 100px);min-height:0}
+body.ask .chat > div:last-child{height:calc(100vh - 62px);min-height:0}
 body.ask .ask{order:-1;margin:0 0 12px;flex:none}
-body.ask .ask textarea{font-size:16px;min-height:50px;overflow:hidden;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:var(--ink)}
+body.ask .ask textarea{font-size:16px;min-height:50px;overflow:hidden;background:#FFFFFF;border-color:#CDD2DB;color:var(--ink)}
 body.ask .ask textarea::placeholder{color:var(--ink3)}
 body.ask .ask .btn{height:50px}
 body.ask .sugg,body.ask #ask-tools,body.ask #ask-mic{display:none!important}
 body.ask .msgs{padding:2px;flex:1;min-height:0;overflow:auto;gap:12px}
 body.ask .msg{font-size:15px;line-height:1.6;max-width:96%}
 body.ask .msg.me{font-size:14px;opacity:.9}
-body.ask .msg.orb{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.14)}
+body.ask .msg.orb{background:#FFFFFF;border-color:#E3E5EB}
 body.ask .empty{color:var(--ink3)}
-body.ask ::-webkit-scrollbar{width:8px}body.ask ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:4px}
+body.ask ::-webkit-scrollbar{width:8px}body.ask ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.18);border-radius:4px}
 body.ask main{animation:unfold .42s cubic-bezier(.2,.9,.25,1.1) both;transform-origin:var(--ox,0%) 50%}
 @keyframes unfold{0%{opacity:0;transform:translateX(var(--dx,-40px)) scaleX(.55) scaleY(.92)}60%{opacity:1}100%{opacity:1;transform:none}}
 body.ask .msg.orb{animation:pop .35s ease both}
@@ -601,20 +599,6 @@ async function boot() {
     document.documentElement.style.setProperty("--ox", side === "left" ? "100%" : "0%");
     document.documentElement.style.setProperty("--dx", side === "left" ? "40px" : "-40px");
     $("ask-q").placeholder = "무엇이든 물어보세요";
-    // 바탕화면 오브가 창 뒤 배경 그림을 만들어 주면(127.0.0.1) 그것을 깐다. 1.5초마다 새로 받아 창이 옮겨져도 맞춘다
-    var bgm = location.search.match(/[?&]bg=(\d+)/);
-    if (bgm) {
-      var bgUrl = "http://127.0.0.1:" + bgm[1] + "/bg.jpg", last = "";
-      var pull = function () {
-        var im = new Image();
-        im.onload = function () {
-          var c = document.createElement("canvas"); c.width = im.width; c.height = im.height;
-          try { c.getContext("2d").drawImage(im, 0, 0); var d = c.toDataURL("image/jpeg", .8); if (d !== last) { last = d; document.documentElement.style.setProperty("--glass", "url(" + d + ")"); document.body.classList.add("glass"); } } catch (e) { /* 그림 못 읽음 */ }
-        };
-        im.crossOrigin = "anonymous"; im.src = bgUrl + "?t=" + Date.now();
-      };
-      pull(); setInterval(pull, 1500);
-    }
   }
   mountOrbs();
   applyTheme(store("orb-theme") || "");
