@@ -291,7 +291,9 @@ body.ask .ask{order:-1;margin:0 0 12px;flex:none}
 body.ask .ask textarea{font-size:16px;min-height:50px;overflow:hidden;background:#FFFFFF;border-color:#CDD2DB;color:var(--ink)}
 body.ask .ask textarea::placeholder{color:var(--ink3)}
 body.ask .ask .btn{height:50px}
-body.ask .sugg,body.ask #ask-tools,body.ask #ask-mic{display:none!important}
+body.ask .sugg,body.ask #ask-tools{display:none!important}
+body.ask #ask-mic{display:inline-flex;height:50px;width:50px;padding:0;font-size:20px;background:var(--chip);color:var(--ink2)}
+body.ask #ask-mic.on{background:var(--crit);color:#fff}
 body.ask .msgs{padding:2px;flex:1;min-height:0;overflow:auto;gap:12px}
 body.ask .msg{font-size:15px;line-height:1.6;max-width:96%}
 body.ask .msg.me{font-size:14px;opacity:.9}
