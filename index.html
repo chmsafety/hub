@@ -280,10 +280,13 @@ body.widget #v-chat .btn.sm{padding:5px 9px;font-size:12.5px}
 body.widget .toast{bottom:70px}
 /* 질문 하나 모드 (?w=2) — 오브 옆에서 펼쳐지는 질문창 · 회색 반투명 느낌 */
 body.ask{--bg:#30343E;--bg2:#3A3F4B;--card:rgba(255,255,255,.08);--card2:rgba(255,255,255,.13);--line:rgba(255,255,255,.16);--chip:rgba(255,255,255,.14);--ink:#F2F4FA;--ink2:#C9CEDC;--ink3:#9AA1B4;--shadow:0 6px 20px rgba(0,0,0,.25);
-  background:linear-gradient(160deg,#3A3F4B,#262A33);color:var(--ink);overflow:hidden;height:100vh;min-height:0}
+  background:linear-gradient(160deg,#3A3F4B,#262A33);color:var(--ink);overflow:hidden;height:100vh;min-height:0;display:block}
+body.ask #s-app{width:100%}
 /* 창 뒤 바탕화면을 흐리게 깐 뒤 회색을 덧씌움 → 반투명 유리 느낌 */
 body.ask.glass{background:linear-gradient(rgba(44,48,58,.62),rgba(36,40,48,.7)),var(--glass) center/cover no-repeat fixed}
 body.ask main{padding:14px 0 10px;height:100vh}
+body.ask .wrap{max-width:none;padding:0 14px}
+body.ask .chat{grid-template-columns:minmax(0,1fr)}
 body.ask .chat .side{display:none}
 body.ask .chat > div:last-child{height:calc(100vh - 24px);min-height:0}
 body.ask .ask{order:-1;margin:0 0 12px;flex:none}
@@ -292,7 +295,7 @@ body.ask .ask textarea::placeholder{color:var(--ink3)}
 body.ask .ask .btn{height:50px}
 body.ask .sugg,body.ask #ask-tools,body.ask #ask-mic{display:none!important}
 body.ask .msgs{padding:2px;flex:1;min-height:0;overflow:auto;gap:12px}
-body.ask .msg{font-size:15px;line-height:1.6}
+body.ask .msg{font-size:15px;line-height:1.6;max-width:96%}
 body.ask .msg.me{font-size:14px;opacity:.9}
 body.ask .msg.orb{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.14)}
 body.ask .empty{color:var(--ink3)}
