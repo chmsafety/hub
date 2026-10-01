@@ -13,8 +13,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-@font-face{font-family:"Mobius";src:url("Mobius-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
-@font-face{font-family:"Mobius";src:url("Mobius-Bold.ttf") format("truetype");font-weight:700;font-style:normal;font-display:swap}
 :root{
   --bg:#0B1024; --bg2:#10183A; --card:#141D44; --card2:#1A2554; --line:#26336B;
   --ink:#EEF1FF; --ink2:#B8C0E6; --ink3:#8590C4;
@@ -306,6 +304,31 @@ body.ask main{animation:unfold .42s cubic-bezier(.2,.9,.25,1.1) both;transform-o
 @keyframes unfold{0%{opacity:0;transform:translateX(var(--dx,-40px)) scaleX(.55) scaleY(.92)}60%{opacity:1}100%{opacity:1;transform:none}}
 body.ask .msg.orb{animation:pop .35s ease both}
 @keyframes pop{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:none}}
+/* ── 주간업무일지 ─────────────────────── */
+.wk-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.wk-bar select{padding:7px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card);min-width:0;max-width:100%}
+.wk-head{display:grid;grid-template-columns:170px minmax(0,1fr) minmax(0,1fr);gap:8px 12px;margin:0 0 12px}
+@media (max-width:640px){.wk-head{grid-template-columns:minmax(0,1fr)}}
+.wk-head label,.wk-ch{font-size:12.5px;color:var(--ink3)}
+.wk-head input{display:block;width:100%;margin-top:3px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--ink)}
+.wk-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:900px){.wk-cols{grid-template-columns:minmax(0,1fr)}}
+.wk-col{min-width:0;display:flex;flex-direction:column}
+.wk-ch{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--chip);border:1px solid var(--line);border-bottom:0;border-radius:12px 12px 0 0;padding:7px 10px}
+.wk-ch b{color:var(--ink);font-size:14px;margin-right:4px}
+.wk-ch input{padding:4px 6px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--ink);font-size:12.5px;max-width:140px}
+.wk-ch .n{margin-left:auto}
+.wk-col textarea{width:100%;min-height:560px;resize:vertical;padding:12px;border-radius:0 0 12px 12px;border:1px solid var(--line);background:var(--card2);color:var(--ink);font-size:14px;line-height:1.6;tab-size:2;outline:none;white-space:pre;overflow-x:auto}
+.wk-col textarea:focus{border-color:var(--accent)}
+@media (max-width:640px){.wk-col textarea{min-height:420px;font-size:13.5px;white-space:pre-wrap}}
+.wk-notes{margin-top:12px;border:1px solid var(--warn);background:color-mix(in srgb,var(--warn) 10%,var(--card));border-radius:12px;padding:10px 12px;font-size:13.5px}
+.wk-notes .wk-meta{color:var(--ink3);font-size:12px;margin-top:6px}
+.wk-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end;margin-top:12px}
+.wk-acts .st{margin-right:auto;font-size:13px;color:var(--ink3)}
+.wk-empty{text-align:center;padding:36px 16px}
+.wk-empty h2{margin:0 0 6px;font-size:18px}
+.wk-empty p{margin:0 0 16px;color:var(--ink3);font-size:13.5px}
+@media (max-width:760px){.nav button{padding:8px 2px;white-space:nowrap;font-size:12.5px}}
 </style>
 </head>
 <body>
@@ -357,6 +380,7 @@ body.ask .msg.orb{animation:pop .35s ease both}
     <nav class="nav" id="nav">
       <button data-v="home" class="on">홈</button>
       <button data-v="chat">대화</button>
+      <button data-v="weekly">일지</button>
       <button data-v="search">검색</button>
       <button data-v="sites">사업장</button>
       <button data-v="settings">설정</button>
@@ -408,6 +432,46 @@ body.ask .msg.orb{animation:pop .35s ease both}
             <button class="btn sm" id="rp-past">지난 리포트</button>
             <button class="btn sm" id="chat-clear">대화 지우기</button>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 주간업무일지 -->
+    <section id="v-weekly" class="hide">
+      <div class="wk-bar">
+        <button class="btn sm" id="wk-older" title="이전 일지">◀</button>
+        <select id="wk-pick" aria-label="일지 고르기"></select>
+        <button class="btn sm" id="wk-newer" title="다음 일지">▶</button>
+        <button class="btn sm" id="wk-this">이번 주</button>
+        <span class="tag" id="wk-state"></span>
+      </div>
+      <div class="card wk-empty hide" id="wk-empty">
+        <h2 id="wk-empty-t"></h2>
+        <p id="wk-empty-d"></p>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+          <button class="btn primary" id="wk-e-draft">✨ 오브 초안 만들기</button>
+          <button class="btn" id="wk-e-copy">전주 '금 주' 칸으로 직접 쓰기</button>
+        </div>
+        <p style="margin:14px 0 0;font-size:12.5px">매주 목요일 15시에 오브가 초안을 자동으로 만들어 알림으로 보내요.</p>
+      </div>
+      <div class="card hide" id="wk-card">
+        <div class="wk-head">
+          <label>보고일<input type="date" id="wk-date"></label>
+          <label>부서명<input id="wk-dept" autocomplete="off"></label>
+          <label>담당자<input id="wk-author" autocomplete="off"></label>
+        </div>
+        <div class="wk-cols">
+          <div class="wk-col"><div class="wk-ch"><b>지난 주</b><input type="date" id="wk-lf" aria-label="지난 주 시작">~<input type="date" id="wk-lt" aria-label="지난 주 끝"><span class="n" id="wk-n-last"></span></div>
+            <textarea id="wk-last" spellcheck="false" aria-label="지난 주 내용"></textarea></div>
+          <div class="wk-col"><div class="wk-ch"><b>금 주</b><input type="date" id="wk-nf" aria-label="금 주 시작">~<input type="date" id="wk-nt" aria-label="금 주 끝"><span class="n" id="wk-n-next"></span></div>
+            <textarea id="wk-next" spellcheck="false" aria-label="금 주 내용"></textarea></div>
+        </div>
+        <div class="wk-notes hide" id="wk-notes"></div>
+        <div class="wk-acts">
+          <span class="st" id="wk-msg"></span>
+          <button class="btn sm" id="wk-draft">✨ 오브 초안 만들기</button>
+          <button class="btn sm" id="wk-save" title="Ctrl+S">저장</button>
+          <button class="btn sm primary" id="wk-word" title="확정으로 저장하고 Word 파일을 받아요">Word 받기 (확정)</button>
         </div>
       </div>
     </section>
@@ -484,7 +548,7 @@ var HUB = {
   url: "https://dbymktwxokbvfshlztrg.supabase.co",
   key: "sb_publishable_RHDgmlGV-m946etnPHfXaw_vy2u8uCp",
   mail: "@bldg.local",
-  version: "3단계+ · 2026-10-01 (바탕화면 오브 · 질문창)"
+  version: "3단계+ · 2026-10-01 (주간업무일지)"
 };
 var WIDGET = /[?&]w=[12]\b/.test(location.search);
 var ASK = /[?&]w=2\b/.test(location.search);   // 질문 하나 모드: 질문 하나에 답 하나, 기록 없음
@@ -495,7 +559,7 @@ var sb = window.supabase.createClient(HUB.url, HUB.key, { auth: { persistSession
 var KIND = {
   task: "업무", schedule: "일정", memo: "전달사항", routine: "정기업무", notice: "공지",
   session: "교육", inspect_plan: "점검 예정", inspection: "점검 결과", improvement: "개선",
-  accident: "산업재해", msds: "MSDS", bid: "입찰", sales: "영업", site: "사업장", staffing: "인원"
+  accident: "산업재해", msds: "MSDS", bid: "입찰", sales: "영업", site: "사업장", staffing: "인원", skt_review: "SKT 강평", skt_finding: "SKT 지적"
 };
 var SEV = { critical: "긴급", warn: "주의", good: "좋음", normal: "" };
 var S = { apps: [], items: [], changes: [], sites: [], siteById: {}, me: null, view: "home", loadedAt: 0 };
@@ -681,7 +745,7 @@ async function enterApp() {
   $("who").textContent = (S.me.name || S.me.login_id || "") + " 님";
   show("s-app");
   loadChat();
-  go(WIDGET ? "chat" : /^#(chat|settings|search|sites)$/.test(location.hash) ? location.hash.slice(1) : "home");
+  go(WIDGET ? "chat" : /^#(chat|weekly|settings|search|sites)$/.test(location.hash) ? location.hash.slice(1) : "home");
   if (WIDGET && /[?&]listen=1\b/.test(location.search)) setTimeout(toggleMic, 350);
   await loadAll();
   registerSW();
@@ -743,15 +807,16 @@ $("b-collect").addEventListener("click", async function () {
 /* ── 화면 전환 ─────────────────────────────────────── */
 function go(v) {
   S.view = v;
-  ["home", "chat", "search", "sites", "settings"].forEach(function (x) { $("v-" + x).classList.toggle("hide", x !== v); });
+  ["home", "chat", "weekly", "search", "sites", "settings"].forEach(function (x) { $("v-" + x).classList.toggle("hide", x !== v); });
   document.querySelectorAll("#nav button").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-v") === v); });
   if (v === "search") { renderSearch(); setTimeout(function () { $("q").focus(); }, 30); }
   if (v === "chat") { renderChat(); setTimeout(function () { $("ask-q").focus(); }, 30); }
   if (v === "settings") renderSettings();
   if (v === "sites") renderSites();
+  if (v === "weekly") renderWeekly();
   window.scrollTo(0, 0);
 }
-$("nav").addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) go(b.getAttribute("data-v")); });
+$("nav").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; if (S.view === "weekly" && b.getAttribute("data-v") !== "weekly" && typeof wkLeaveOk === "function" && !wkLeaveOk()) return; go(b.getAttribute("data-v")); });
 
 function render() {
   renderHome();
@@ -913,6 +978,7 @@ $("l-ntc").addEventListener("click", async function (e) {
   var id = Number(el.getAttribute("data-nid")), x = (S.notices || []).filter(function (n) { return n.id === id; })[0];
   if (!x) return;
   if (!x.read_at) { x.read_at = new Date().toISOString(); el.classList.remove("unread"); sb.from("hub_notices").update({ read_at: x.read_at }).eq("id", id).then(function () { renderNotices(); }); }
+  if (x.kind === "report" && /주간업무일지/.test(x.title)) { go("weekly"); return; }
   if (x.kind === "report") { go("chat"); showPastReports(); return; }
   var refs = x.refs || [];
   if (refs.length === 1) { var it = findItem(refs[0].app_id + "\u0001" + refs[0].kind + "\u0001" + refs[0].ext_id); if (it) return openItem(it); }
@@ -1498,6 +1564,308 @@ setInterval(function () {
   var a = document.activeElement; if (a && /INPUT|SELECT|TEXTAREA/.test(a.tagName)) return;
   if (Date.now() - S.loadedAt > 10 * 60e3) loadAll();
 }, 60e3);
+
+/* ── 주간업무일지 (2026-10-01) ───────────────────────────────────
+ *  hub_weekly 표를 읽고 쓴다. 초안은 서버 함수 hub-weekly 가 만든다.
+ *  Word(.docx) 는 브라우저 안에서 만든다 — 기존 일지 양식(A4, 2칸 표, 현대체 Light) 그대로. */
+var WK = { list: [], cur: null, orig: null, dirty: false, busy: false };
+var WK_FONT = "현대체 Light";
+
+function wkMonday(ymd) { return addDays(ymd, -((new Date(Date.parse(ymd + "T00:00:00Z")).getUTCDay() + 6) % 7)); }
+// 보고일 기본값 = 이번 주 목요일. 지난 주 = 그 주 월요일~보고일, 금 주 = 다음 주 월~금 (서버 hub-weekly 와 같은 규칙)
+function wkPeriods(date) {
+  var rep = date || addDays(wkMonday(kst()), 3), mon = wkMonday(rep);
+  return { report_date: rep, last_from: mon, last_to: rep, next_from: addDays(mon, 7), next_to: addDays(mon, 11) };
+}
+function wkDot(ymd) { if (!ymd) return ""; var p = ymd.split("-"); return Number(p[1]) + "." + Number(p[2]); }
+function wkRange(a, b) { return "(" + wkDot(a) + " ~ " + wkDot(b) + ")"; }
+var WK_ST = { draft: ["초안", "warn"], final: ["확정", "good"], imported: ["지난 일지", ""] };
+
+async function renderWeekly() {
+  var r = await sb.from("hub_weekly").select("report_date,status,source,updated_at").order("report_date", { ascending: false });
+  if (r.error) { $("wk-msg").textContent = "불러오지 못했어요: " + r.error.message; return; }
+  WK.list = r.data || [];
+  var p = wkPeriods();
+  if (!WK.cur) {
+    if (WK.list.some(function (x) { return x.report_date === p.report_date; })) await wkOpen(p.report_date);
+    else wkShowEmpty(p);
+  }
+  wkFillPick();
+}
+function wkFillPick() {
+  var p = wkPeriods(), have = WK.list.some(function (x) { return x.report_date === p.report_date; });
+  var opts = (have ? [] : ['<option value="new:' + p.report_date + '">' + md(p.report_date) + " 보고 · 이번 주 (아직 없음)</option>"]).concat(WK.list.map(function (x) {
+    return '<option value="' + x.report_date + '">' + x.report_date.replace(/-/g, ".") + " 보고 · " + (WK_ST[x.status] || [x.status])[0] + "</option>";
+  }));
+  $("wk-pick").innerHTML = opts.join("");
+  $("wk-pick").value = WK.cur && !WK.cur._new ? WK.cur.report_date : "new:" + p.report_date;
+}
+function wkShowEmpty(p) {
+  WK.cur = null; WK.orig = null; WK.dirty = false;
+  $("wk-card").classList.add("hide"); $("wk-empty").classList.remove("hide");
+  $("wk-empty-t").textContent = md(p.report_date) + " 보고 일지가 아직 없어요";
+  var prev = WK.list.filter(function (x) { return x.report_date < p.report_date; })[0];
+  $("wk-empty-d").textContent = "지난 주 " + wkRange(p.last_from, p.last_to) + " · 금 주 " + wkRange(p.next_from, p.next_to) +
+    (prev ? " · 바로 전 일지: " + prev.report_date.replace(/-/g, ".") : "");
+  $("wk-state").textContent = ""; $("wk-state").className = "tag";
+  WK.emptyP = p;
+}
+async function wkOpen(date) {
+  var r = await sb.from("hub_weekly").select("*").eq("report_date", date).maybeSingle();
+  if (r.error || !r.data) { toast("열지 못했어요: " + (r.error ? r.error.message : "없음")); return; }
+  WK.cur = r.data; WK.orig = date; WK.dirty = false;
+  wkPaint();
+}
+function wkPaint() {
+  var w = WK.cur;
+  $("wk-empty").classList.add("hide"); $("wk-card").classList.remove("hide");
+  $("wk-date").value = w.report_date; $("wk-dept").value = w.dept || "경영지원본부"; $("wk-author").value = w.author || "천재우";
+  $("wk-lf").value = w.last_from || ""; $("wk-lt").value = w.last_to || ""; $("wk-nf").value = w.next_from || ""; $("wk-nt").value = w.next_to || "";
+  $("wk-last").value = w.last_text || ""; $("wk-next").value = w.next_text || "";
+  var st = WK_ST[w.status] || [w.status, ""];
+  $("wk-state").textContent = w._new ? "새 일지 (저장 전)" : st[0] + (w.source === "orb" && w.status === "draft" ? " · 오브 작성" : "");
+  $("wk-state").className = "tag " + (w._new ? "warn" : st[1]);
+  var m = w.meta || {};
+  var showNotes = w.status === "draft" && m.notes;
+  $("wk-notes").classList.toggle("hide", !showNotes);
+  if (showNotes) $("wk-notes").innerHTML = "<b>오브 메모 — 확인해 주세요</b>" + fmtAnswer(m.notes, []) +
+    (m.counts ? '<div class="wk-meta">허브 자료: 점검 결과 ' + m.counts.inspections + "건 · 점검 예정 " + m.counts.plans + "건 · 교육 " + m.counts.sessions_last + "/" + m.counts.sessions_next + "건 · 완료 업무 " + m.counts.tasks_done + "건" + (m.prev ? " · 이어받은 일지 " + m.prev.replace(/-/g, ".") : "") + "</div>" : "");
+  $("wk-draft").textContent = w.status === "draft" && !w._new ? "✨ 초안 다시 만들기" : "✨ 오브 초안 만들기";
+  $("wk-draft").disabled = w.status === "final" || w.status === "imported";
+  $("wk-draft").title = $("wk-draft").disabled ? "확정된 일지는 오브가 덮어쓰지 않아요" : "";
+  wkMsg(w._new ? "아직 저장하지 않았어요" : "마지막 저장 " + new Date(w.updated_at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }));
+  wkLines();
+}
+function wkMsg(t, bad) { $("wk-msg").textContent = t; $("wk-msg").style.color = bad ? "var(--crit)" : ""; }
+function wkLines() {
+  ["last", "next"].forEach(function (k) {
+    var n = $("wk-" + k).value.split("\n").length;
+    $("wk-n-" + k).textContent = n + "줄";
+    $("wk-n-" + k).style.color = n > 62 ? "var(--warn)" : "";
+    $("wk-n-" + k).title = n > 62 ? "한 장(약 62줄)을 넘으면 Word 에서 2쪽이 될 수 있어요" : "";
+  });
+}
+function wkCollect() {
+  var w = WK.cur;
+  return {
+    report_date: $("wk-date").value, dept: $("wk-dept").value.trim() || "경영지원본부", author: $("wk-author").value.trim() || "천재우",
+    last_from: $("wk-lf").value || null, last_to: $("wk-lt").value || null, next_from: $("wk-nf").value || null, next_to: $("wk-nt").value || null,
+    last_text: $("wk-last").value.replace(/\s+$/, ""), next_text: $("wk-next").value.replace(/\s+$/, ""),
+    status: w.status || "draft", source: w.source || "manual", meta: w.meta || {}
+  };
+}
+async function wkSave(status) {
+  if (!WK.cur) return false;
+  var row = wkCollect();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(row.report_date)) { wkMsg("보고일을 넣어 주세요", true); return false; }
+  if (status) row.status = status;
+  if (row.status === "imported" && status === "final") row.status = "final";
+  var moved = WK.orig && WK.orig !== row.report_date;
+  if (moved || WK.cur._new) {
+    var ex = await sb.from("hub_weekly").select("report_date").eq("report_date", row.report_date).maybeSingle();
+    if (ex.data) { wkMsg(row.report_date + " 일지가 이미 있어요. 보고일을 바꿔 주세요", true); return false; }
+  }
+  busy(true);
+  try {
+    var r = await sb.from("hub_weekly").upsert(row, { onConflict: "report_date" }).select("*").single();
+    if (r.error) throw r.error;
+    if (moved) await sb.from("hub_weekly").delete().eq("report_date", WK.orig);
+    WK.cur = r.data; WK.orig = r.data.report_date; WK.dirty = false;
+    var l = await sb.from("hub_weekly").select("report_date,status,source,updated_at").order("report_date", { ascending: false });
+    WK.list = l.data || WK.list; wkFillPick(); wkPaint();
+    toast(row.status === "final" ? "확정했어요" : "저장했어요");
+    return true;
+  } catch (err) { wkMsg("저장 실패: " + (err.message || err), true); return false; }
+  finally { busy(false); }
+}
+function wkLeaveOk() { return !WK.dirty || window.confirm("저장하지 않은 내용이 있어요. 버리고 이동할까요?"); }
+
+async function wkDraft() {
+  if (WK.busy) return;
+  var date = WK.cur ? $("wk-date").value : WK.emptyP.report_date;
+  var force = !!(WK.cur && !WK.cur._new);
+  if (force && !window.confirm("지금 초안을 오브가 새로 쓴 것으로 바꿀까요? 고친 내용은 사라져요.")) return;
+  WK.busy = true; busy(true); orb("think");
+  ["wk-draft", "wk-e-draft"].forEach(function (id) { $(id).disabled = true; $(id).textContent = "✨ 쓰는 중… (1~2분)"; });
+  wkMsg("오브가 지난 일지와 허브 자료(점검·교육·업무)로 초안을 쓰고 있어요");
+  try {
+    var r = await sb.functions.invoke("hub-weekly", { body: { action: "draft", date: date, force: force } });
+    var d = r.data || {};
+    if (r.error) { var msg = r.error.message; try { var j = await r.error.context.json(); if (j && j.error) msg = j.error; } catch (e) { /* 본문 없음 */ } throw new Error(msg); }
+    if (d.error) throw new Error(d.error);
+    if (d.skipped) { toast(d.reason); await wkOpen(d.report_date); }
+    else {
+      // 서버는 바로 "시작"만 알려 주고 뒤에서 쓴다 → 다 될 때까지 4초마다 확인 (최대 4분)
+      var since = d.started_at, deadline = Date.now() + 240000, done = false;
+      while (Date.now() < deadline) {
+        await new Promise(function (res) { setTimeout(res, 4000); });
+        var w = await sb.from("hub_weekly").select("report_date,meta").eq("report_date", d.report_date).maybeSingle();
+        if (w.data && w.data.meta && w.data.meta.started_at === since) { done = true; break; }
+        var e = await sb.from("hub_chats").select("a,at").eq("mode", "weekly").eq("ok", false).gte("at", since).order("at", { ascending: false }).limit(1);
+        if (e.data && e.data.length) throw new Error(e.data[0].a);
+      }
+      if (!done) throw new Error("4분 안에 끝나지 않았어요. 잠시 뒤 [이번 주]를 눌러 다시 확인해 보세요");
+      await wkOpen(d.report_date); toast("초안을 만들었어요 — 확인하고 고쳐 주세요");
+    }
+    var l = await sb.from("hub_weekly").select("report_date,status,source,updated_at").order("report_date", { ascending: false });
+    WK.list = l.data || WK.list; wkFillPick();
+    orb("happy");
+  } catch (err) { wkMsg("초안을 만들지 못했어요 — " + (err.message || err), true); orb("warn"); }
+  finally {
+    WK.busy = false; busy(false);
+    $("wk-e-draft").disabled = false; $("wk-e-draft").textContent = "✨ 오브 초안 만들기";
+    if (WK.cur) wkPaint();
+  }
+}
+async function wkStartFromPrev() {
+  var p = WK.emptyP, prev = WK.list.filter(function (x) { return x.report_date < p.report_date; })[0];
+  var txt = "";
+  if (prev) { var r = await sb.from("hub_weekly").select("next_text").eq("report_date", prev.report_date).maybeSingle(); txt = (r.data && r.data.next_text) || ""; }
+  WK.cur = { _new: true, report_date: p.report_date, last_from: p.last_from, last_to: p.last_to, next_from: p.next_from, next_to: p.next_to,
+    dept: "경영지원본부", author: "천재우", last_text: txt || "1. 안전보건 업무\n1) \n\n2. 기타\n1) ", next_text: txt || "1. 안전보건 업무\n1) \n\n2. 기타\n1) ", status: "draft", source: "manual", meta: {} };
+  WK.orig = null; WK.dirty = true; wkPaint();
+}
+async function wkWord() {
+  if (!WK.cur) return;
+  var keep = WK.cur.status === "imported" && !WK.dirty;   // 지난 일지를 그냥 다시 받는 경우는 상태를 바꾸지 않는다
+  if (!keep) { var ok = await wkSave("final"); if (!ok) return; }
+  var w = wkCollect();
+  try {
+    var bytes = buildWeeklyDocx(w);
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }));
+    a.download = "주간 업무 일지 " + w.report_date.replace(/-/g, ".") + "_" + (w.author || "천재우") + ".docx";
+    document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+    toast("Word 파일을 받았어요");
+  } catch (err) { wkMsg("Word 를 만들지 못했어요 — " + (err.message || err), true); }
+}
+
+/* ── Word(.docx) 만들기: 압축 없는 zip + WordprocessingML ─────────── */
+var WK_CRC = (function () { var t = new Uint32Array(256); for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function wkCrc(b) { var c = 0xFFFFFFFF; for (var i = 0; i < b.length; i++) c = WK_CRC[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function wkZip(files) {
+  var enc = new TextEncoder(), parts = [], central = [], off = 0;
+  var d = new Date(), dt = ((d.getFullYear() - 1980) << 9 | (d.getMonth() + 1) << 5 | d.getDate()) & 0xFFFF, tm = (d.getHours() << 11 | d.getMinutes() << 5 | (d.getSeconds() >> 1)) & 0xFFFF;
+  files.forEach(function (f) {
+    var name = enc.encode(f.name), data = typeof f.data === "string" ? enc.encode(f.data) : f.data, crc = wkCrc(data);
+    var h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+    h.setUint16(10, tm, true); h.setUint16(12, dt, true); h.setUint32(14, crc, true); h.setUint32(18, data.length, true); h.setUint32(22, data.length, true);
+    h.setUint16(26, name.length, true); h.setUint16(28, 0, true);
+    parts.push(new Uint8Array(h.buffer), name, data);
+    var c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true);
+    c.setUint16(12, tm, true); c.setUint16(14, dt, true); c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true);
+    c.setUint16(28, name.length, true); c.setUint16(30, 0, true); c.setUint16(32, 0, true); c.setUint16(34, 0, true); c.setUint16(36, 0, true); c.setUint32(38, 0, true); c.setUint32(42, off, true);
+    central.push(new Uint8Array(c.buffer), name);
+    off += 30 + name.length + data.length;
+  });
+  var cdSize = central.reduce(function (a, x) { return a + x.length; }, 0);
+  var e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cdSize, true); e.setUint32(16, off, true);
+  var all = parts.concat(central, [new Uint8Array(e.buffer)]), total = all.reduce(function (a, x) { return a + x.length; }, 0), out = new Uint8Array(total), p = 0;
+  all.forEach(function (x) { out.set(x, p); p += x.length; });
+  return out;
+}
+function buildWeeklyDocx(w) {
+  var F = WK_FONT;
+  var X = function (s) { return String(s == null ? "" : s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); };
+  var rpr = function (sz, b, extra) { return '<w:rPr><w:rFonts w:ascii="' + F + '" w:hAnsi="' + F + '" w:eastAsia="' + F + '" w:cs="' + F + '"/>' + (b ? "<w:b/><w:bCs/>" : "") + '<w:color w:val="000000"/><w:kern w:val="2"/><w:sz w:val="' + sz + '"/><w:szCs w:val="' + sz + '"/>' + (extra || "") + "</w:rPr>"; };
+  var run = function (t, sz, b, extra) { return "<w:r>" + rpr(sz, b, extra) + '<w:t xml:space="preserve">' + X(t) + "</w:t></w:r>"; };
+  var para = function (inner, ppr, sz, b) { return "<w:p><w:pPr>" + (ppr || "") + rpr(sz || 18, b) + "</w:pPr>" + inner + "</w:p>"; };
+  var bd = '<w:top w:val="single" w:sz="2" w:space="0" w:color="0A0000"/><w:left w:val="single" w:sz="2" w:space="0" w:color="0A0000"/><w:bottom w:val="single" w:sz="2" w:space="0" w:color="0A0000"/><w:right w:val="single" w:sz="2" w:space="0" w:color="0A0000"/>';
+  var cell = function (wd, inner, head) { return '<w:tc><w:tcPr><w:tcW w:w="' + wd + '" w:type="dxa"/><w:tcBorders>' + bd + "</w:tcBorders>" + (head ? '<w:shd w:val="clear" w:color="auto" w:fill="E5E5E5"/><w:vAlign w:val="center"/>' : "") + "</w:tcPr>" + inner + "</w:tc>"; };
+  // 기존 일지처럼: "1." 대분류·"1)" 업무는 굵게, "-" 세부·"(" 보충은 보통 글씨로 들여쓰기 (들여쓰기는 공백이 아니라 문단 들여쓰기로)
+  // 한 장에 맞추기: 칸마다 화면에 차지할 줄 수(한 줄 약 36자)를 어림해 기본(줄간격 1.2, 9pt)으로 넘치면 줄간격→글자 크기 순으로 줄인다
+  var est = function (text) { return String(text || "").split("\n").reduce(function (a, l) { return a + Math.max(1, Math.ceil(l.replace(/\s+$/, "").length / 36)); }, 0) + 2; };
+  var need = Math.max(est(w.last_text), est(w.next_text)), FIT = 46;
+  var LINE = need <= FIT ? 288 : Math.max(228, Math.floor(288 * FIT / need));
+  var SZ = need * LINE / 288 > FIT * 1.04 ? 16 : 18;
+  var body = function (text) {
+    var sp = '<w:snapToGrid w:val="false"/><w:spacing w:before="0" w:after="0" w:line="' + LINE + '" w:lineRule="auto"/>';
+    var out = para("", sp, 12, true), prevBlank = true;
+    String(text || "").replace(/\r/g, "").split("\n").forEach(function (l) {
+      var t = l.replace(/^\s+/, ""), ind = "", b = false;
+      if (!t) { out += para("", sp, SZ); prevBlank = true; return; }
+      if (/^\d+\.\s/.test(t)) { b = true; if (!prevBlank) out += para("", sp, SZ); }   // 대분류 앞에는 빈 줄 하나
+      prevBlank = false;
+      if (b) { /* 대분류 */ }
+      else if (/^\d+\)\s?/.test(t)) { b = true; ind = '<w:ind w:firstLine="168"/>'; }
+      else if (/^[-•·]/.test(t)) { ind = '<w:ind w:firstLine="252"/>'; }
+      else if (/^[(（]/.test(t)) { ind = '<w:ind w:left="340"/>'; }
+      else { t = l; }   // 그 밖의 줄(앞 줄에서 이어진 문장 등)은 쓴 그대로
+      out += para(run(t, SZ, b), sp + ind, SZ, b);
+    });
+    return out;
+  };
+  var headP = function (t) { return para(run(t, 22, true), '<w:jc w:val="center"/>', 22, true); };
+  var doc = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' +
+    para(run("주간업무 주요내용 보고", 40, true, '<w:u w:val="double" w:color="000000"/>'), '<w:jc w:val="center"/>', 40, true) +
+    para("", '<w:jc w:val="center"/>', 12, true) +
+    para(run("■ 부서명: " + (w.dept || ""), 28) + "<w:r>" + rpr(28) + "<w:tab/></w:r>" + run("담당자: " + (w.author || ""), 28), '<w:tabs><w:tab w:val="right" w:pos="9500"/></w:tabs><w:ind w:left="-88"/>', 28) +
+    '<w:tbl><w:tblPr><w:tblW w:w="10098" w:type="dxa"/><w:tblInd w:w="-357" w:type="dxa"/><w:tblBorders>' + bd + '<w:insideH w:val="single" w:sz="2" w:space="0" w:color="0A0000"/><w:insideV w:val="single" w:sz="2" w:space="0" w:color="0A0000"/></w:tblBorders><w:tblLayout w:type="fixed"/>' +
+    '<w:tblCellMar><w:top w:w="28" w:type="dxa"/><w:left w:w="102" w:type="dxa"/><w:bottom w:w="28" w:type="dxa"/><w:right w:w="102" w:type="dxa"/></w:tblCellMar></w:tblPr>' +
+    '<w:tblGrid><w:gridCol w:w="4995"/><w:gridCol w:w="5103"/></w:tblGrid>' +
+    '<w:tr><w:trPr><w:trHeight w:val="360" w:hRule="atLeast"/><w:tblHeader/></w:trPr>' + cell(4995, headP("지난 주 " + wkRange(w.last_from, w.last_to)), true) + cell(5103, headP("금 주 " + wkRange(w.next_from, w.next_to)), true) + "</w:tr>" +
+    '<w:tr><w:trPr><w:trHeight w:val="13680" w:hRule="atLeast"/></w:trPr>' + cell(4995, body(w.last_text)) + cell(5103, body(w.next_text)) + "</w:tr>" +
+    "</w:tbl>" + para("", "", 4) +
+    '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="993" w:right="1440" w:bottom="284" w:left="1440" w:header="0" w:footer="0" w:gutter="0"/><w:docGrid w:linePitch="360"/></w:sectPr>' +
+    "</w:body></w:document>";
+  var styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
+    '<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="' + F + '" w:hAnsi="' + F + '" w:eastAsia="' + F + '" w:cs="' + F + '"/><w:sz w:val="18"/><w:szCs w:val="18"/><w:lang w:val="en-US" w:eastAsia="ko-KR"/></w:rPr></w:rPrDefault>' +
+    '<w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>' +
+    '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/><w:pPr><w:widowControl w:val="0"/><w:wordWrap w:val="0"/><w:autoSpaceDE w:val="0"/><w:autoSpaceDN w:val="0"/></w:pPr></w:style>' +
+    '<w:style w:type="table" w:default="1" w:styleId="TableNormal"><w:name w:val="Normal Table"/><w:tblPr><w:tblInd w:w="0" w:type="dxa"/><w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:left w:w="108" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="108" w:type="dxa"/></w:tblCellMar></w:tblPr></w:style></w:styles>';
+  return wkZip([
+    { name: "[Content_Types].xml", data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>' },
+    { name: "_rels/.rels", data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>' },
+    { name: "docProps/core.xml", data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>주간업무 주요내용 보고 ' + X(w.report_date) + '</dc:title><dc:creator>' + X(w.author) + '</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">' + new Date().toISOString().slice(0, 19) + 'Z</dcterms:created></cp:coreProperties>' },
+    { name: "word/_rels/document.xml.rels", data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>' },
+    { name: "word/document.xml", data: doc },
+    { name: "word/styles.xml", data: styles }
+  ]);
+}
+
+/* ── 이벤트 ── */
+$("wk-pick").addEventListener("change", async function () {
+  var v = this.value;
+  if (!wkLeaveOk()) { wkFillPick(); return; }
+  if (v.indexOf("new:") === 0) { WK.cur = null; wkShowEmpty(wkPeriods(v.slice(4))); }
+  else await wkOpen(v);
+  wkFillPick();
+});
+function wkStep(dir) {
+  var opts = Array.prototype.map.call($("wk-pick").options, function (o) { return o.value; });
+  var i = opts.indexOf($("wk-pick").value) + dir;
+  if (i < 0 || i >= opts.length) return;
+  $("wk-pick").value = opts[i]; $("wk-pick").dispatchEvent(new Event("change"));
+}
+$("wk-older").addEventListener("click", function () { wkStep(1); });
+$("wk-newer").addEventListener("click", function () { wkStep(-1); });
+$("wk-this").addEventListener("click", async function () {
+  if (!wkLeaveOk()) return;
+  var p = wkPeriods();
+  if (WK.list.some(function (x) { return x.report_date === p.report_date; })) await wkOpen(p.report_date); else { WK.cur = null; wkShowEmpty(p); }
+  wkFillPick();
+});
+["wk-last", "wk-next", "wk-dept", "wk-author", "wk-date", "wk-lf", "wk-lt", "wk-nf", "wk-nt"].forEach(function (id) {
+  $(id).addEventListener("input", function () { WK.dirty = true; wkMsg("저장 안 됨"); if (id === "wk-last" || id === "wk-next") wkLines(); });
+});
+$("wk-date").addEventListener("change", function () {   // 보고일을 바꾸면 기간도 그 주로 맞춘다
+  var v = this.value; if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return;
+  var p = wkPeriods(v); $("wk-lf").value = p.last_from; $("wk-lt").value = p.last_to; $("wk-nf").value = p.next_from; $("wk-nt").value = p.next_to;
+});
+$("wk-save").addEventListener("click", function () { wkSave(); });
+$("wk-word").addEventListener("click", wkWord);
+$("wk-draft").addEventListener("click", wkDraft);
+$("wk-e-draft").addEventListener("click", wkDraft);
+$("wk-e-copy").addEventListener("click", wkStartFromPrev);
+document.addEventListener("keydown", function (e) {
+  if (S.view === "weekly" && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); wkSave(); }
+});
+window.addEventListener("beforeunload", function (e) { if (WK.dirty) { e.preventDefault(); e.returnValue = ""; } });
+window.addEventListener("hashchange", function () { if (location.hash === "#weekly" && !$("s-app").classList.contains("hide")) go("weekly"); });
 
 sb.auth.onAuthStateChange(function (ev) { if (ev === "SIGNED_OUT") show("s-login"); });
 boot();
