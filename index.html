@@ -331,6 +331,8 @@ body.ask .msg.orb{animation:pop .35s ease both}
 .wk-empty h2{margin:0 0 6px;font-size:18px}
 .wk-empty p{margin:0 0 16px;color:var(--ink3);font-size:13.5px}
 @media (max-width:760px){.nav button{padding:8px 2px;white-space:nowrap;font-size:12.5px}}
+.sm-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px;margin-top:12px}
+@media (max-width:640px){.sm-grid{grid-template-columns:minmax(0,1fr)}}
 </style>
 </head>
 <body>
@@ -499,6 +501,22 @@ body.ask .msg.orb{animation:pop .35s ease both}
     <!-- 설정 -->
     <section id="v-settings" class="hide">
       <div class="grid">
+        <div class="card" id="sm-card"><h3>사업장 명단 · 모든 앱의 기준 <span class="n" id="sm-n"></span></h3>
+          <p style="margin:0 0 8px;color:var(--ink3);font-size:13px">CHM·CHMS 사업장은 여기서 추가·수정·종료·삭제해요. CHM 사업장 관리 앱과 같은 명단이고, 앞으로 만드는 앱은 모두 이 명단(코드 기준)을 받아 써요.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 8px">
+            <input id="sm-q" placeholder="이름·고객사·주소·코드로 찾기" autocomplete="off" style="flex:1;min-width:160px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card2)">
+            <span class="chips" id="sm-co" style="margin:0"></span>
+            <label class="switch"><input type="checkbox" id="sm-arch"> 종료된 곳도</label>
+            <button class="btn sm primary" id="sm-add">+ 사업장 추가</button>
+          </div>
+          <div class="tscroll" style="max-height:460px;overflow:auto"><table class="t" id="sm-t"></table></div>
+          <details style="margin-top:10px"><summary style="cursor:pointer;font-size:13.5px;color:var(--ink2)">다른 앱에서 이 명단 받아 가기 (공용 주소)</summary>
+            <div style="font-size:13px;color:var(--ink3);margin:8px 0">새 앱(Apps Script·웹앱)은 아래 주소로 최신 명단을 받아 가서 사업장을 <b>코드</b>(예: CHM-001, 바뀌지 않음)로 저장해요. <code>&amp;company=CHM</code> 회사만 · <code>&amp;all=1</code> 종료 포함 · <code>&amp;format=csv</code> 엑셀용</div>
+            <div class="mono" id="sm-url" style="background:var(--card2);border-radius:10px;padding:8px 10px">…</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button class="btn sm" id="sm-show">키 보이기</button><button class="btn sm" id="sm-copy">주소 복사</button><button class="btn sm" id="sm-csv">CSV 받기</button><button class="btn sm" id="sm-reset" style="margin-left:auto">키 새로 만들기</button></div>
+            <div class="err" id="sm-err"></div>
+          </details>
+        </div>
         <div class="card"><h3>연결 앱</h3><div id="apps-edit"></div>
           <button class="btn sm" id="b-add-app">+ 새 앱 연결</button></div>
         <div class="card"><h3>사업장 이름 연결 대기 <span class="n" id="n-un"></span></h3>
@@ -550,7 +568,7 @@ var HUB = {
   url: "https://dbymktwxokbvfshlztrg.supabase.co",
   key: "sb_publishable_RHDgmlGV-m946etnPHfXaw_vy2u8uCp",
   mail: "@bldg.local",
-  version: "3단계+ · 2026-10-01 (주간업무일지)"
+  version: "3단계+ · 2026-10-19 (사업장 명단 기준)"
 };
 var WIDGET = /[?&]w=[12]\b/.test(location.search);
 var ASK = /[?&]w=2\b/.test(location.search);   // 질문 하나 모드: 질문 하나에 답 하나, 기록 없음
@@ -1461,6 +1479,7 @@ function openSite(id) {
 /* ── 설정 ──────────────────────────────────────────── */
 var ADAPTERS = [["hub", "표준 커넥터 (hub-1)"], ["team_json", "업무관리 data.json"], ["edu_cal", "교육관리 eduCal (일정만)"], ["safe_cal", "안전보건 schedCal (일정만)"], ["local_bldg", "빌딩정보 DB 직접"], ["local_site", "사업장 관리 DB 직접"]];
 async function renderSettings() {
+  renderSiteMaster();
   renderAiSettings();
   renderPushSettings();
   renderWriteSettings();
@@ -1550,6 +1569,127 @@ $("b-add-app").addEventListener("click", async function () {
   var a = await sb.from("hub_apps").select("*").order("sort"); S.apps = a.data || S.apps; renderSettings();
   toast("아래에 새 칸이 생겼어요. 주소·비밀키를 넣고 저장한 뒤 「사용」을 켜세요");
 });
+/* ── 사업장 명단 (2026-10-19) — CHM·CHMS 사업장 기준 명단 관리 ──────────────
+ *  site_sites 를 hub_site_list / hub_site_save / hub_site_archive 로 읽고 쓴다. 완전 삭제는 서버 함수 hub-sites.
+ *  앞으로 만드는 앱은 hub-sites?key=… 로 이 명단을 받아 간다. */
+var SM = { sites: [], clients: [], co: "", key: null, showKey: false, loaded: false };
+var SM_URL = HUB.url + "/functions/v1/hub-sites";
+async function smLoad() {
+  var r = await sb.rpc("hub_site_list");
+  if (r.error) throw r.error;
+  SM.sites = (r.data && r.data.sites) || []; SM.clients = (r.data && r.data.clients) || []; SM.loaded = true;
+}
+async function renderSiteMaster() {
+  try { await smLoad(); } catch (err) { $("sm-t").innerHTML = '<tr><td class="err">명단을 불러오지 못했어요: ' + esc(err.message || err) + "</td></tr>"; return; }
+  smPaint(); smUrl();
+}
+function smPaint() {
+  var live = SM.sites.filter(function (s) { return !s.archived_at; });
+  var nCo = function (c) { return live.filter(function (s) { return s.company === c; }).length; };
+  $("sm-n").textContent = "CHM " + nCo("CHM") + " · CHMS " + nCo("CHMS") + " · 종료 " + (SM.sites.length - live.length);
+  $("sm-co").innerHTML = [["", "전체"], ["CHM", "CHM"], ["CHMS", "CHMS"]].map(function (x) { return '<button class="chip' + (SM.co === x[0] ? " on" : "") + '" data-smco="' + x[0] + '">' + x[1] + "</button>"; }).join("");
+  var q = $("sm-q").value.trim().toLowerCase(), arch = $("sm-arch").checked;
+  var list = SM.sites.filter(function (s) {
+    if (!arch && s.archived_at) return false;
+    if (SM.co && s.company !== SM.co) return false;
+    if (q && [s.code, s.name, s.client, s.addr, s.memo].join(" ").toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  });
+  $("sm-t").innerHTML = "<tr><th>코드</th><th>사업장</th><th>고객사</th><th>주소</th><th>연면적㎡</th><th>상태</th></tr>" + (list.map(function (s) {
+    return '<tr data-smid="' + s.id + '" style="cursor:pointer' + (s.archived_at ? ";opacity:.55" : "") + '"><td class="mono" style="white-space:nowrap">' + esc(s.code || "") + "</td><td><b style=\"font-weight:500\">" + esc(s.name) + '</b><div style="font-size:12px;color:var(--ink3)">' + esc(s.company) + (Object.keys(s.aliases || {}).length ? " · 별칭 " + Object.keys(s.aliases).length : "") + "</div></td><td>" + esc(s.client || "") + "</td><td style=\"font-size:12.5px\">" + esc(s.addr || "") + "</td><td style=\"white-space:nowrap\">" + (s.area_m2 != null ? Number(s.area_m2).toLocaleString("ko-KR", { maximumFractionDigits: 0 }) : "") + "</td><td>" + (s.archived_at ? '<span class="tag">종료</span>' : '<span class="tag good">운영</span>') + "</td></tr>";
+  }).join("") || '<tr><td colspan="6" class="empty">맞는 사업장이 없어요</td></tr>');
+}
+async function smUrl() {
+  if (!SM.key) { try { var r = await sb.rpc("hub_sites_key", { p_reset: false }); if (!r.error) SM.key = r.data; } catch (e) { /* 키 없음 */ } }
+  var k = SM.key ? (SM.showKey ? SM.key : SM.key.slice(0, 4) + "••••••••" + SM.key.slice(-4)) : "(키를 불러오지 못했어요)";
+  $("sm-url").textContent = SM_URL + "?key=" + k;
+  $("sm-show").textContent = SM.showKey ? "키 가리기" : "키 보이기";
+}
+$("sm-co").addEventListener("click", function (e) { var b = e.target.closest("[data-smco]"); if (b) { SM.co = b.getAttribute("data-smco"); smPaint(); } });
+$("sm-q").addEventListener("input", function () { if (SM.loaded) smPaint(); });
+$("sm-arch").addEventListener("change", function () { if (SM.loaded) smPaint(); });
+$("sm-t").addEventListener("click", function (e) { var r = e.target.closest("[data-smid]"); if (r) smEdit(Number(r.getAttribute("data-smid"))); });
+$("sm-add").addEventListener("click", function () { smEdit(null); });
+$("sm-show").addEventListener("click", function () { SM.showKey = !SM.showKey; smUrl(); });
+$("sm-copy").addEventListener("click", function () { if (!SM.key) return; navigator.clipboard.writeText(SM_URL + "?key=" + SM.key).then(function () { toast("주소를 복사했어요 (키 포함 — 다른 사람에게 보내지 마세요)"); }); });
+$("sm-csv").addEventListener("click", function () { if (SM.key) window.open(SM_URL + "?all=1&format=csv&key=" + SM.key, "_blank", "noopener"); });
+$("sm-reset").addEventListener("click", async function () {
+  if (!window.confirm("키를 새로 만들면 지금 키를 쓰는 앱은 명단을 못 받아요. 새로 만들까요?")) return;
+  var r = await sb.rpc("hub_sites_key", { p_reset: true });
+  if (r.error) { $("sm-err").textContent = r.error.message; return; }
+  SM.key = r.data; SM.showKey = true; smUrl(); toast("새 키를 만들었어요 — 쓰는 앱에 바꿔 넣어 주세요");
+});
+
+function smAliasText(a) { return Object.keys(a || {}).map(function (k) { return k + "=" + a[k]; }).join("\n"); }
+function smAliasParse(t) {
+  var o = {}, bad = [];
+  String(t || "").split("\n").forEach(function (l) { l = l.trim(); if (!l) return; var m = l.match(/^([a-z0-9_-]{2,24})\s*[=:]\s*(.+)$/i); if (m) o[m[1].toLowerCase()] = m[2].trim(); else bad.push(l); });
+  if (bad.length) throw new Error("별칭은 「앱키=이름」 형식으로 한 줄에 하나씩 써 주세요: " + bad[0]);
+  return o;
+}
+function smEdit(id) {
+  var s = id ? SM.sites.filter(function (x) { return x.id === id; })[0] : null;
+  if (id && !s) return;
+  s = s || { company: SM.co || "CHM", aliases: {} };
+  var f = function (k, label, v, attr) { return '<label class="field"><span>' + label + '</span><input data-sm="' + k + '" value="' + esc(v == null ? "" : v) + '"' + (attr || "") + "></label>"; };
+  var canDel = id && !s.n_records && !s.n_hub;
+  var why = !id ? "" : s.n_records ? "사업장 관리 기록 " + s.n_records + "건이 있어 완전 삭제는 안 돼요 (종료로 보관)" : s.n_hub ? "다른 앱 자료 " + s.n_hub + "건이 이 사업장에 묶여 있어 완전 삭제는 안 돼요 (종료로 보관)" : "기록이 없는 사업장이라 완전 삭제할 수 있어요" + (s.n_staffing ? " (정원·현원 " + s.n_staffing + "줄은 함께 지워져요)" : "");
+  modal("<h2>" + (id ? esc(s.name) + ' <span class="tag">' + esc(s.code || "") + "</span>" + (s.archived_at ? ' <span class="tag">종료</span>' : "") : "사업장 추가") + "</h2>" +
+    '<div class="sm-grid">' +
+    '<label class="field"><span>회사</span><select data-sm="company"><option' + (s.company === "CHM" ? " selected" : "") + '>CHM</option><option' + (s.company === "CHMS" ? " selected" : "") + ">CHMS</option></select></label>" +
+    f("name", "사업장 이름 *", s.name, ' autocomplete="off"') +
+    f("client_name", "고객사 (목록에 없으면 새로 생겨요)", s.client, ' list="sm-clients" autocomplete="off"') +
+    f("sort", "정렬 순서", s.sort, ' type="number"') +
+    '<div style="grid-column:1/-1">' + f("addr", "주소", s.addr) + "</div>" +
+    f("area_m2", "연면적 (㎡)", s.area_m2, ' type="number" step="0.01"') +
+    '<div style="display:flex;gap:8px">' + f("floors_above", "지상층", s.floors_above, ' type="number"') + f("floors_below", "지하층", s.floors_below, ' type="number"') + "</div>" +
+    f("building_id", "빌딩정보 ID (빌딩정보시스템 연결)", s.building_id) +
+    '<div class="field" style="font-size:12.5px;color:var(--ink3);align-self:end;padding-bottom:14px">' + esc(s.building ? "연결된 빌딩: " + s.building : "") + "</div>" +
+    '<label class="field" style="grid-column:1/-1"><span>앱별 별칭 — 다른 앱에서 부르는 이름 (한 줄에 하나, 예: edu=판교 · safety=판교)</span><textarea data-sm="aliases" rows="3" style="resize:vertical">' + esc(smAliasText(s.aliases)) + "</textarea></label>" +
+    '<label class="field" style="grid-column:1/-1"><span>메모</span><textarea data-sm="memo" rows="2" style="resize:vertical">' + esc(s.memo || "") + "</textarea></label>" +
+    "</div>" +
+    '<datalist id="sm-clients">' + SM.clients.map(function (c) { return '<option value="' + esc(c.name) + '">'; }).join("") + "</datalist>" +
+    (id ? '<div style="font-size:12.5px;color:var(--ink3);margin:0 0 8px">' + esc(why) + "</div>" : "") +
+    '<div class="err" id="sm-e"></div>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:6px">' +
+    (id ? '<button class="btn sm" data-smact="del"' + (canDel ? "" : ' disabled title="' + esc(why) + '"') + ' style="margin-right:auto;color:var(--crit)">완전 삭제</button>' +
+          '<button class="btn sm" data-smact="arch">' + (s.archived_at ? "다시 운영" : "종료 (보관)") + "</button>" : "") +
+    '<button class="btn sm" data-close>닫기</button><button class="btn sm primary" data-smact="save">' + (id ? "저장" : "추가") + "</button></div>");
+  var box = $("modal-root").querySelector(".box");
+  box.style.maxWidth = "680px";
+  setTimeout(function () { var n = box.querySelector('[data-sm="name"]'); if (n && !id) n.focus(); }, 30);
+  box.addEventListener("click", async function (e) {
+    var b = e.target.closest("[data-smact]"); if (!b || b.disabled) return;
+    var act = b.getAttribute("data-smact"), err = $("sm-e"); err.textContent = "";
+    var v = function (k) { var el = box.querySelector('[data-sm="' + k + '"]'); return el ? el.value.trim() : ""; };
+    try {
+      if (act === "del" && b.getAttribute("data-sure") !== "1") {
+        b.setAttribute("data-sure", "1"); b.textContent = "한 번 더 누르면 지워져요"; setTimeout(function () { b.removeAttribute("data-sure"); b.textContent = "완전 삭제"; }, 5000); return;
+      }
+      b.disabled = true; busy(true);
+      var msg;
+      if (act === "save") {
+        var p = { id: id, company: v("company"), name: v("name"), client_name: v("client_name"), addr: v("addr"), area_m2: v("area_m2"), floors_above: v("floors_above"),
+          floors_below: v("floors_below"), sort: v("sort"), building_id: v("building_id"), memo: v("memo"), aliases: smAliasParse(box.querySelector('[data-sm="aliases"]').value) };
+        if (!p.name) throw new Error("사업장 이름을 넣어 주세요");
+        var r = await sb.rpc("hub_site_save", { p: p }); if (r.error) throw r.error;
+        msg = (id ? "저장했어요 · " : "추가했어요 · ") + r.data.code + " " + r.data.name;
+      } else if (act === "arch") {
+        var a = await sb.rpc("hub_site_archive", { p_id: id, p_archive: !s.archived_at }); if (a.error) throw a.error;
+        msg = s.archived_at ? s.name + " 을(를) 다시 운영으로 돌렸어요" : s.name + " 을(를) 종료(보관)했어요 — 「종료된 곳도」에서 다시 볼 수 있어요";
+      } else if (act === "del") {
+        var d = await sb.functions.invoke("hub-sites", { body: { action: "delete", id: id } });
+        if (d.error) { var m = d.error.message; try { var j = await d.error.context.json(); if (j && j.error) m = j.error; } catch (x) { /* 본문 없음 */ } throw new Error(m); }
+        if (d.data && d.data.error) throw new Error(d.data.error);
+        msg = s.name + " 을(를) 명단에서 지웠어요";
+      }
+      $("modal-root").innerHTML = ""; toast(msg);
+      await renderSiteMaster();
+      sb.functions.invoke("hub-collect", { body: { action: "collect", app_id: "site" } }).then(function () { loadAll(); });   // 허브 사업장 목록·오브에도 바로 반영
+    } catch (x) { err.textContent = x.message || String(x); b.disabled = false; }
+    finally { busy(false); }
+  });
+}
 $("t-un").addEventListener("change", async function (e) {
   var sel = e.target.closest("select[data-raw]"); if (!sel || !sel.value) return;
   var r = await sb.rpc("hub_set_alias", { p_alias: sel.getAttribute("data-alias"), p_raw: sel.getAttribute("data-raw"), p_site: Number(sel.value) });
