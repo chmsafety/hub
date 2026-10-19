@@ -504,7 +504,7 @@ body.ask .msg.orb{animation:pop .35s ease both}
         <div class="card" id="sm-card"><h3>사업장 명단 · 모든 앱의 기준 <span class="n" id="sm-n"></span></h3>
           <p style="margin:0 0 8px;color:var(--ink3);font-size:13px">CHM·CHMS 사업장은 여기서 추가·수정·종료·삭제해요. CHM 사업장 관리 앱과 같은 명단이고, 앞으로 만드는 앱은 모두 이 명단(코드 기준)을 받아 써요.</p>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 8px">
-            <input id="sm-q" placeholder="이름·고객사·주소·코드로 찾기" autocomplete="off" style="flex:1;min-width:160px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card2)">
+            <input id="sm-q" type="search" name="sm-find" placeholder="이름·고객사·주소·코드로 찾기" autocomplete="off" style="flex:1;min-width:160px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card2)">
             <span class="chips" id="sm-co" style="margin:0"></span>
             <label class="switch"><input type="checkbox" id="sm-arch"> 종료된 곳도</label>
             <button class="btn sm primary" id="sm-add">+ 사업장 추가</button>
@@ -1580,6 +1580,7 @@ async function smLoad() {
   SM.sites = (r.data && r.data.sites) || []; SM.clients = (r.data && r.data.clients) || []; SM.loaded = true;
 }
 async function renderSiteMaster() {
+  if (!SM.loaded) $("sm-q").value = "";   // 브라우저가 로그인 아이디를 자동으로 채우는 것 막기
   try { await smLoad(); } catch (err) { $("sm-t").innerHTML = '<tr><td class="err">명단을 불러오지 못했어요: ' + esc(err.message || err) + "</td></tr>"; return; }
   smPaint(); smUrl();
 }
