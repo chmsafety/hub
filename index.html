@@ -331,6 +331,8 @@ body.ask .msg.orb{animation:pop .35s ease both}
 .wk-empty h2{margin:0 0 6px;font-size:18px}
 .wk-empty p{margin:0 0 16px;color:var(--ink3);font-size:13.5px}
 @media (max-width:760px){.nav button{padding:8px 2px;white-space:nowrap;font-size:12.5px}}
+.sm-mg{display:flex;gap:6px;margin:0 0 6px;align-items:center}
+@media (max-width:640px){.sm-mg{flex-wrap:wrap}.sm-mg input{flex:1 1 45%!important}}
 .sm-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px;margin-top:12px}
 @media (max-width:640px){.sm-grid{grid-template-columns:minmax(0,1fr)}}
 </style>
@@ -504,7 +506,7 @@ body.ask .msg.orb{animation:pop .35s ease both}
         <div class="card" id="sm-card"><h3>사업장 명단 · 모든 앱의 기준 <span class="n" id="sm-n"></span></h3>
           <p style="margin:0 0 8px;color:var(--ink3);font-size:13px">CHM·CHMS 사업장은 여기서 추가·수정·종료·삭제해요. CHM 사업장 관리 앱과 같은 명단이고, 앞으로 만드는 앱은 모두 이 명단(코드 기준)을 받아 써요.</p>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 8px">
-            <input id="sm-q" type="search" name="sm-find" placeholder="이름·고객사·주소·코드로 찾기" autocomplete="off" style="flex:1;min-width:160px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card2)">
+            <input id="sm-q" type="search" name="sm-find" placeholder="이름·고객사·관리자·주소·코드로 찾기" autocomplete="off" style="flex:1;min-width:160px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card2)">
             <span class="chips" id="sm-co" style="margin:0"></span>
             <label class="switch"><input type="checkbox" id="sm-arch"> 종료된 곳도</label>
             <button class="btn sm primary" id="sm-add">+ 사업장 추가</button>
@@ -1593,12 +1595,12 @@ function smPaint() {
   var list = SM.sites.filter(function (s) {
     if (!arch && s.archived_at) return false;
     if (SM.co && s.company !== SM.co) return false;
-    if (q && [s.code, s.name, s.client, s.addr, s.memo].join(" ").toLowerCase().indexOf(q) < 0) return false;
+    if (q && [s.code, s.name, s.client, s.addr, s.memo].concat((s.managers || []).map(function (m) { return [m.role, m.name, m.phone, m.email].join(" "); })).join(" ").toLowerCase().indexOf(q) < 0) return false;
     return true;
   });
-  $("sm-t").innerHTML = "<tr><th>코드</th><th>사업장</th><th>고객사</th><th>주소</th><th>연면적㎡</th><th>상태</th></tr>" + (list.map(function (s) {
-    return '<tr data-smid="' + s.id + '" style="cursor:pointer' + (s.archived_at ? ";opacity:.55" : "") + '"><td class="mono" style="white-space:nowrap">' + esc(s.code || "") + "</td><td><b style=\"font-weight:500\">" + esc(s.name) + '</b><div style="font-size:12px;color:var(--ink3)">' + esc(s.company) + (Object.keys(s.aliases || {}).length ? " · 별칭 " + Object.keys(s.aliases).length : "") + "</div></td><td>" + esc(s.client || "") + "</td><td style=\"font-size:12.5px\">" + esc(s.addr || "") + "</td><td style=\"white-space:nowrap\">" + (s.area_m2 != null ? Number(s.area_m2).toLocaleString("ko-KR", { maximumFractionDigits: 0 }) : "") + "</td><td>" + (s.archived_at ? '<span class="tag">종료</span>' : '<span class="tag good">운영</span>') + "</td></tr>";
-  }).join("") || '<tr><td colspan="6" class="empty">맞는 사업장이 없어요</td></tr>');
+  $("sm-t").innerHTML = "<tr><th>코드</th><th>사업장</th><th>고객사</th><th>관리자</th><th>주소</th><th>연면적㎡</th><th>상태</th></tr>" + (list.map(function (s) {
+    return '<tr data-smid="' + s.id + '" style="cursor:pointer' + (s.archived_at ? ";opacity:.55" : "") + '"><td class="mono" style="white-space:nowrap">' + esc(s.code || "") + "</td><td><b style=\"font-weight:500\">" + esc(s.name) + '</b><div style="font-size:12px;color:var(--ink3)">' + esc(s.company) + (Object.keys(s.aliases || {}).length ? " · 별칭 " + Object.keys(s.aliases).length : "") + "</div></td><td>" + esc(s.client || "") + "</td><td>" + smMgrCell(s.managers) + "</td><td style=\"font-size:12.5px\">" + esc(s.addr || "") + "</td><td style=\"white-space:nowrap\">" + (s.area_m2 != null ? Number(s.area_m2).toLocaleString("ko-KR", { maximumFractionDigits: 0 }) : "") + "</td><td>" + (s.archived_at ? '<span class="tag">종료</span>' : '<span class="tag good">운영</span>') + "</td></tr>";
+  }).join("") || '<tr><td colspan="7" class="empty">맞는 사업장이 없어요</td></tr>');
 }
 async function smUrl() {
   if (!SM.key) { try { var r = await sb.rpc("hub_sites_key", { p_reset: false }); if (!r.error) SM.key = r.data; } catch (e) { /* 키 없음 */ } }
@@ -1621,6 +1623,28 @@ $("sm-reset").addEventListener("click", async function () {
   SM.key = r.data; SM.showKey = true; smUrl(); toast("새 키를 만들었어요 — 쓰는 앱에 바꿔 넣어 주세요");
 });
 
+function smMgrCell(ms) {
+  ms = ms || [];
+  if (!ms.length) return '<span style="font-size:12px;color:var(--ink3)">—</span>';
+  var m = ms[0];
+  return '<div style="white-space:nowrap"><b style="font-weight:500">' + esc(m.name) + '</b> <span style="font-size:12px;color:var(--ink3)">' + esc(m.role || "") + "</span>" + (ms.length > 1 ? ' <span class="tag">+' + (ms.length - 1) + "</span>" : "") + "</div>" +
+    '<div style="font-size:12px;color:var(--ink3);white-space:nowrap">' + esc([m.phone, m.email].filter(Boolean).join(" · ")) + "</div>";
+}
+var SM_ROLES = ["소장", "시설팀장", "관리자", "부소장", "안전관리자", "기전팀장", "미화반장", "보안팀장"];
+function smPhone(v) {
+  var d = String(v || "").replace(/\D/g, "");
+  if (/^02\d{7,8}$/.test(d)) return d.replace(/^(02)(\d{3,4})(\d{4})$/, "$1-$2-$3");
+  if (/^0\d{9,10}$/.test(d)) return d.replace(/^(0\d{2})(\d{3,4})(\d{4})$/, "$1-$2-$3");
+  if (/^1\d{7}$/.test(d)) return d.replace(/^(\d{4})(\d{4})$/, "$1-$2");
+  return String(v || "").trim();
+}
+function smMgrRow(m) {
+  m = m || {};
+  var inp = function (k, ph, w, attr) { return '<input data-mg="' + k + '" value="' + esc(m[k] || "") + '" placeholder="' + ph + '" style="flex:' + w + ';min-width:0;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card2)"' + (attr || "") + ">"; };
+  return '<div class="sm-mg" data-mgid="' + esc(m.id || "") + '">' + inp("role", "직책", 1.1, ' list="sm-roles" autocomplete="off"') + inp("name", "이름 *", 1.1, ' autocomplete="off"') +
+    inp("phone", "전화 (010-…)", 1.4, ' type="tel" autocomplete="off"') + inp("email", "이메일", 2, ' type="email" autocomplete="off"') +
+    '<button class="btn sm" data-mgdel title="이 관리자 빼기" style="flex:none">✕</button></div>';
+}
 function smAliasText(a) { return Object.keys(a || {}).map(function (k) { return k + "=" + a[k]; }).join("\n"); }
 function smAliasParse(t) {
   var o = {}, bad = [];
@@ -1646,6 +1670,8 @@ function smEdit(id) {
     '<div style="display:flex;gap:8px">' + f("floors_above", "지상층", s.floors_above, ' type="number"') + f("floors_below", "지하층", s.floors_below, ' type="number"') + "</div>" +
     f("building_id", "빌딩정보 ID (빌딩정보시스템 연결)", s.building_id) +
     '<div class="field" style="font-size:12.5px;color:var(--ink3);align-self:end;padding-bottom:14px">' + esc(s.building ? "연결된 빌딩: " + s.building : "") + "</div>" +
+    '<div class="field" style="grid-column:1/-1"><span>관리자 — 이름·전화·이메일 (CHM 사업장 관리 앱과 같은 명단)</span><div id="sm-mgs">' + ((s.managers && s.managers.length ? s.managers : [{}]).map(smMgrRow).join("")) + '</div>' +
+    '<button class="btn sm" data-mgadd style="margin-top:6px">+ 관리자 추가</button><datalist id="sm-roles">' + SM_ROLES.map(function (r) { return '<option value="' + r + '">'; }).join("") + "</datalist></div>" +
     '<label class="field" style="grid-column:1/-1"><span>앱별 별칭 — 다른 앱에서 부르는 이름 (한 줄에 하나, 예: edu=판교 · safety=판교)</span><textarea data-sm="aliases" rows="3" style="resize:vertical">' + esc(smAliasText(s.aliases)) + "</textarea></label>" +
     '<label class="field" style="grid-column:1/-1"><span>메모</span><textarea data-sm="memo" rows="2" style="resize:vertical">' + esc(s.memo || "") + "</textarea></label>" +
     "</div>" +
@@ -1659,7 +1685,10 @@ function smEdit(id) {
   var box = $("modal-root").querySelector(".box");
   box.style.maxWidth = "680px";
   setTimeout(function () { var n = box.querySelector('[data-sm="name"]'); if (n && !id) n.focus(); }, 30);
+  box.addEventListener("focusout", function (e) { if (e.target.matches && e.target.matches('[data-mg="phone"]')) e.target.value = smPhone(e.target.value); });
   box.addEventListener("click", async function (e) {
+    if (e.target.closest("[data-mgadd]")) { $("sm-mgs").insertAdjacentHTML("beforeend", smMgrRow({})); var rs = $("sm-mgs").querySelectorAll(".sm-mg"); rs[rs.length - 1].querySelector('[data-mg="role"]').focus(); return; }
+    var dm = e.target.closest("[data-mgdel]"); if (dm) { dm.closest(".sm-mg").remove(); return; }
     var b = e.target.closest("[data-smact]"); if (!b || b.disabled) return;
     var act = b.getAttribute("data-smact"), err = $("sm-e"); err.textContent = "";
     var v = function (k) { var el = box.querySelector('[data-sm="' + k + '"]'); return el ? el.value.trim() : ""; };
@@ -1673,8 +1702,18 @@ function smEdit(id) {
         var p = { id: id, company: v("company"), name: v("name"), client_name: v("client_name"), addr: v("addr"), area_m2: v("area_m2"), floors_above: v("floors_above"),
           floors_below: v("floors_below"), sort: v("sort"), building_id: v("building_id"), memo: v("memo"), aliases: smAliasParse(box.querySelector('[data-sm="aliases"]').value) };
         if (!p.name) throw new Error("사업장 이름을 넣어 주세요");
+        var mgs = Array.prototype.map.call(box.querySelectorAll(".sm-mg"), function (row) {
+          var g = function (k) { return row.querySelector('[data-mg="' + k + '"]').value.trim(); };
+          return { id: row.getAttribute("data-mgid") || null, role: g("role"), name: g("name"), phone: smPhone(g("phone")), email: g("email") };
+        }).filter(function (m) { return m.role || m.name || m.phone || m.email; });
+        mgs.forEach(function (m, i) {
+          if (!m.name) throw new Error("관리자 " + (i + 1) + "번째 줄에 이름을 넣어 주세요");
+          if (m.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m.email)) throw new Error("이메일 형식이 맞지 않아요: " + m.email);
+        });
         var r = await sb.rpc("hub_site_save", { p: p }); if (r.error) throw r.error;
-        msg = (id ? "저장했어요 · " : "추가했어요 · ") + r.data.code + " " + r.data.name;
+        var mr = await sb.rpc("hub_site_managers_save", { p_site: r.data.id, p_list: mgs });
+        if (mr.error) throw new Error("사업장은 저장했지만 관리자 저장에 실패했어요 — " + mr.error.message);
+        msg = (id ? "저장했어요 · " : "추가했어요 · ") + r.data.code + " " + r.data.name + (mgs.length ? " · 관리자 " + mgs.length + "명" : "");
       } else if (act === "arch") {
         var a = await sb.rpc("hub_site_archive", { p_id: id, p_archive: !s.archived_at }); if (a.error) throw a.error;
         msg = s.archived_at ? s.name + " 을(를) 다시 운영으로 돌렸어요" : s.name + " 을(를) 종료(보관)했어요 — 「종료된 곳도」에서 다시 볼 수 있어요";
