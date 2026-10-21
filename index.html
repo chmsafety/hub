@@ -509,7 +509,7 @@ body.ask .msg.orb{animation:pop .35s ease both}
             <input id="sm-q" type="search" name="sm-find" placeholder="이름·고객사·관리자·주소·코드로 찾기" autocomplete="off" style="flex:1;min-width:160px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card2)">
             <span class="chips" id="sm-co" style="margin:0"></span>
             <label class="switch"><input type="checkbox" id="sm-arch"> 종료된 곳도</label>
-            <button class="btn sm primary" id="sm-add">+ 사업장 추가</button>
+            <button class="btn sm" id="sm-xlsx" title="지금 목록(검색·회사·종료 포함 조건 그대로)을 엑셀 파일로 받아요">⬇ 엑셀로 받기</button><button class="btn sm primary" id="sm-add">+ 사업장 추가</button>
           </div>
           <div class="tscroll" style="max-height:460px;overflow:auto"><table class="t" id="sm-t"></table></div>
           <details style="margin-top:10px"><summary style="cursor:pointer;font-size:13.5px;color:var(--ink2)">다른 앱에서 이 명단 받아 가기 (공용 주소)</summary>
@@ -1598,6 +1598,7 @@ function smPaint() {
     if (q && [s.code, s.name, s.client, s.addr, s.memo].concat((s.managers || []).map(function (m) { return [m.role, m.name, m.phone, m.email].join(" "); })).join(" ").toLowerCase().indexOf(q) < 0) return false;
     return true;
   });
+  SM.list = list;
   $("sm-t").innerHTML = "<tr><th>코드</th><th>사업장</th><th>고객사</th><th>관리자</th><th>주소</th><th>연면적㎡</th><th>상태</th></tr>" + (list.map(function (s) {
     return '<tr data-smid="' + s.id + '" style="cursor:pointer' + (s.archived_at ? ";opacity:.55" : "") + '"><td class="mono" style="white-space:nowrap">' + esc(s.code || "") + "</td><td><b style=\"font-weight:500\">" + esc(s.name) + '</b><div style="font-size:12px;color:var(--ink3)">' + esc(s.company) + (Object.keys(s.aliases || {}).length ? " · 별칭 " + Object.keys(s.aliases).length : "") + "</div></td><td>" + esc(s.client || "") + "</td><td>" + smMgrCell(s.managers) + "</td><td style=\"font-size:12.5px\">" + esc(s.addr || "") + "</td><td style=\"white-space:nowrap\">" + (s.area_m2 != null ? Number(s.area_m2).toLocaleString("ko-KR", { maximumFractionDigits: 0 }) : "") + "</td><td>" + (s.archived_at ? '<span class="tag">종료</span>' : '<span class="tag good">운영</span>') + "</td></tr>";
   }).join("") || '<tr><td colspan="7" class="empty">맞는 사업장이 없어요</td></tr>');
@@ -1613,6 +1614,54 @@ $("sm-q").addEventListener("input", function () { if (SM.loaded) smPaint(); });
 $("sm-arch").addEventListener("change", function () { if (SM.loaded) smPaint(); });
 $("sm-t").addEventListener("click", function (e) { var r = e.target.closest("[data-smid]"); if (r) smEdit(Number(r.getAttribute("data-smid"))); });
 $("sm-add").addEventListener("click", function () { smEdit(null); });
+
+// 엑셀(.xlsx) 내보내기 — 화면에 보이는 목록 그대로. 시트1 사업장 명단, 시트2 관리자 연락처
+function smLoadXlsx() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  return new Promise(function (ok, no) {
+    var sc = document.createElement("script");
+    sc.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+    sc.onload = function () { window.XLSX ? ok(window.XLSX) : no(new Error("엑셀 도구를 불러오지 못했어요")); };
+    sc.onerror = function () { no(new Error("엑셀 도구를 불러오지 못했어요 (인터넷 연결 확인)")); };
+    document.head.appendChild(sc);
+  });
+}
+$("sm-xlsx").addEventListener("click", async function () {
+  var b = this; if (!SM.loaded) return;
+  var list = SM.list || [];
+  if (!list.length) return toast("내보낼 사업장이 없어요");
+  b.disabled = true; b.textContent = "만드는 중…";
+  try {
+    var X = await smLoadXlsx();
+    var num = function (v) { return v == null || v === "" ? "" : Number(v); };
+    var aliasTxt = function (a) { return Object.keys(a || {}).map(function (k) { return k + "=" + a[k]; }).join(", "); };
+    var head = ["번호", "코드", "회사", "사업장", "고객사", "상태", "주소", "연면적(㎡)", "지상층", "지하층",
+      "관리자 직책", "관리자 이름", "관리자 전화", "관리자 이메일", "관리자 수", "빌딩정보 ID", "앱별 별칭", "메모", "종료일"];
+    var rows = list.map(function (s, i) {
+      var m = (s.managers || [])[0] || {};
+      return [i + 1, s.code || "", s.company, s.name, s.client || "", s.archived_at ? "종료" : "운영", s.addr || "", num(s.area_m2), num(s.floors_above), num(s.floors_below),
+        m.role || "", m.name || "", m.phone || "", m.email || "", (s.managers || []).length || "", s.building_id || "", aliasTxt(s.aliases), s.memo || "",
+        s.archived_at ? String(s.archived_at).slice(0, 10) : ""];
+    });
+    var ws = X.utils.aoa_to_sheet([head].concat(rows));
+    ws["!cols"] = [5, 10, 7, 22, 14, 6, 40, 12, 7, 7, 10, 10, 15, 26, 8, 22, 24, 30, 11].map(function (w) { return { wch: w }; });
+    ws["!autofilter"] = { ref: X.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: rows.length, c: head.length - 1 } }) };
+    ws["!freeze"] = { xSplit: 0, ySplit: 1 };
+    for (var r = 1; r <= rows.length; r++) { var c = ws[X.utils.encode_cell({ r: r, c: 7 })]; if (c && c.t === "n") c.z = "#,##0.00"; }
+    var mh = ["코드", "회사", "사업장", "직책", "이름", "전화", "이메일"], mr = [];
+    list.forEach(function (s) { (s.managers || []).forEach(function (m) { mr.push([s.code || "", s.company, s.name, m.role || "", m.name || "", m.phone || "", m.email || ""]); }); });
+    var ws2 = X.utils.aoa_to_sheet([mh].concat(mr));
+    ws2["!cols"] = [10, 7, 22, 10, 10, 15, 28].map(function (w) { return { wch: w }; });
+    var wb = X.utils.book_new();
+    X.utils.book_append_sheet(wb, ws, "사업장 명단");
+    X.utils.book_append_sheet(wb, ws2, "관리자 연락처");
+    var t = kst().replace(/-/g, "");
+    var tag = (SM.co ? SM.co + "_" : "") + ($("sm-arch").checked ? "종료포함_" : "");
+    X.writeFile(wb, "CHM사업장명단_" + tag + t + ".xlsx");
+    toast("엑셀로 받았어요 · " + rows.length + "곳" + (mr.length ? " · 관리자 " + mr.length + "명" : ""));
+  } catch (err) { toast("엑셀을 만들지 못했어요 — " + (err.message || err)); }
+  finally { b.disabled = false; b.textContent = "⬇ 엑셀로 받기"; }
+});
 $("sm-show").addEventListener("click", function () { SM.showKey = !SM.showKey; smUrl(); });
 $("sm-copy").addEventListener("click", function () { if (!SM.key) return; navigator.clipboard.writeText(SM_URL + "?key=" + SM.key).then(function () { toast("주소를 복사했어요 (키 포함 — 다른 사람에게 보내지 마세요)"); }); });
 $("sm-csv").addEventListener("click", function () { if (SM.key) window.open(SM_URL + "?all=1&format=csv&key=" + SM.key, "_blank", "noopener"); });
