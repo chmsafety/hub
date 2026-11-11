@@ -217,6 +217,52 @@ table.t th{color:var(--ink3);font-weight:500;font-size:12.5px}
 .msg.orb h2:first-child{margin-top:0}
 .msg .cite{display:inline-block;font-size:11px;padding:0 6px;border-radius:10px;background:var(--chip);color:var(--accent);cursor:pointer;vertical-align:1px;margin:0 1px}
 .msg .cite:hover{filter:brightness(1.15)}
+/* ── 오브 답 꾸밈 (2026-11-11): 상태 색 · 진행 막대 · 기한 칩 · 그래프 ── */
+:root{--st-good:#0ca30c;--st-warn:#fab219;--st-crit:#d03b3b;--st-run:#3987e5;
+  --c1:#3987e5;--c2:#d95926;--c3:#199e70;--c4:#c98500;--c5:#d55181;--c6:#008300;--c7:#9085e9;--c8:#e66767}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--st-run:#2a78d6;--c1:#2a78d6;--c2:#eb6834;--c3:#1baf7a;--c4:#eda100;--c5:#e87ba4;--c6:#008300;--c7:#6250d6;--c8:#e34948}}
+:root[data-theme="light"]{--st-run:#2a78d6;--c1:#2a78d6;--c2:#eb6834;--c3:#1baf7a;--c4:#eda100;--c5:#e87ba4;--c6:#008300;--c7:#6250d6;--c8:#e34948}
+.msg.orb .pl{white-space:normal;margin:2px 0}
+.msg.orb .pl.lead{font-size:15.5px;font-weight:500;margin-bottom:6px}
+.msg.orb h2{display:flex;align-items:center;gap:8px;margin:14px 0 6px;padding-bottom:6px;border-bottom:1px solid var(--line);white-space:normal}
+.msg.orb h2 .pic{flex:none;width:26px;height:26px;border-radius:8px;background:var(--chip);display:inline-flex;align-items:center;justify-content:center;font-size:15px;line-height:1}
+.msg.orb ul.al{list-style:none;margin:4px 0;padding:0;display:flex;flex-direction:column;gap:4px;white-space:normal}
+.msg.orb ul.al li{position:relative;padding:6px 10px 6px 28px;border-radius:10px;background:var(--card2);border:1px solid transparent}
+.msg.orb ul.al li:before{content:"";position:absolute;left:11px;top:14px;width:8px;height:8px;border-radius:50%;background:var(--ink3);opacity:.5}
+.msg.orb ul.al li.s-good:before{background:var(--st-good);opacity:1}
+.msg.orb ul.al li.s-run:before{background:var(--st-run);opacity:1}
+.msg.orb ul.al li.s-warn:before{background:var(--st-warn);opacity:1}
+.msg.orb ul.al li.s-crit:before{background:var(--st-crit);opacity:1}
+.msg.orb ul.al li.s-warn{border-color:var(--st-warn)}
+.msg.orb ul.al li.s-crit{border-color:var(--st-crit)}
+.msg.orb b.num{font-variant-numeric:tabular-nums}
+.msg.orb .pbar{display:inline-block;vertical-align:middle;width:88px;height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin:0 7px 2px}
+.msg.orb .pbar i{display:block;height:100%;border-radius:4px;background:var(--st-run)}
+.msg.orb .pbar.b-good i{background:var(--st-good)} .msg.orb .pbar.b-warn i{background:var(--st-warn)} .msg.orb .pbar.b-crit i{background:var(--st-crit)}
+.msg.orb .due{display:inline-block;font-size:12px;padding:0 8px;border-radius:10px;border:1px solid var(--line);color:var(--ink2);white-space:nowrap}
+.msg.orb .due.soon{border-color:var(--st-warn);color:var(--ink)}
+.msg.orb .due.late{border-color:var(--st-crit);color:var(--ink)}
+.msg.orb .chart{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;background:var(--card2);white-space:normal}
+.msg.orb .chart .ct{font-size:13px;color:var(--ink2);margin-bottom:8px}
+.msg.orb .chart .dn{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.msg.orb .chart .dn svg{flex:none}
+.msg.orb .chart .dnv{font-size:8px;font-weight:700;fill:var(--ink)}
+.msg.orb .chart .dnu{font-size:3.2px;fill:var(--ink3)}
+.msg.orb .chart .lg{display:flex;flex-direction:column;gap:4px;min-width:150px;flex:1}
+.msg.orb .chart .lr{display:flex;align-items:center;gap:8px;font-size:13px}
+.msg.orb .chart .sw{width:10px;height:10px;border-radius:3px;flex:none}
+.msg.orb .chart .ll{flex:1;color:var(--ink2)}
+.msg.orb .chart .lp{width:38px;text-align:right;color:var(--ink3);font-size:12px;font-variant-numeric:tabular-nums}
+.msg.orb .chart .hb{display:flex;flex-direction:column;gap:6px}
+.msg.orb .chart .hr{display:grid;grid-template-columns:minmax(64px,30%) 1fr auto;align-items:center;gap:10px;font-size:13px}
+.msg.orb .chart .hl{color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msg.orb .chart .ht{height:10px;border-radius:4px;background:var(--line);overflow:hidden}
+.msg.orb .chart .ht i{display:block;height:100%;border-radius:0 4px 4px 0}
+.msg.orb .chart .ln{width:100%;height:auto;max-width:460px;display:block}
+.msg.orb .chart .ax{stroke:var(--line);stroke-width:1}
+.msg.orb .chart .lv{font-size:9px;fill:var(--ink)}
+.msg.orb .chart .lx{font-size:8.5px;fill:var(--ink3)}
+.msgs>.msg{flex-shrink:0}
 .refs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .ref{border:1px solid var(--line);background:var(--card2);border-radius:12px;padding:4px 10px;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;max-width:100%}
 .ref b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px}
@@ -1063,18 +1109,101 @@ function saveChat() { if (!ASK) store("orb-chat", JSON.stringify(CHAT.msgs.slice
 
 // 답 본문: [n] 인용 → 칩, "- " 줄 → 목록, ## → 제목 (리포트)
 function fmtAnswer(text, refs) {
+  // 2026-11-11: 보기 좋게 — 묶음 제목 픽토그램, 상태 색 점, 진행 막대, 기한 칩, 그래프([[그래프 도넛|막대|선 | 제목 | 이름=값 | …]])
   var byN = {}; (refs || []).forEach(function (r) { byN[r.n] = r; });
-  var lines = String(text || "").split("\n"), out = [], inList = false;
-  lines.forEach(function (l) {
-    var h = l.match(/^#{1,3}\s+(.*)$/), li = l.match(/^\s*[-•]\s+(.*)$/);
-    var body = esc(h ? h[1] : li ? li[1] : l).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
+  var PIC = /^((?:[☀-➿⬀-⯿]|[\uD83C-\uD83E][\uDC00-\uDFFF])️?)\s*(.*)$/;
+  var ST = { "🟢": "good", "✅": "good", "🔵": "run", "🟠": "warn", "🟡": "warn", "⚠": "warn", "🔴": "crit", "⚪": "none" };
+  var STN = { good: "완료·양호", run: "진행·예정", warn: "주의", crit: "긴급", none: "" };
+  var CAT = ["var(--c1)", "var(--c2)", "var(--c3)", "var(--c4)", "var(--c5)", "var(--c6)", "var(--c7)", "var(--c8)"];
+  function semantic(label) {
+    if (/긴급|미실시|기한 ?지남|초과|위험|미흡|부적합/.test(label)) return "var(--st-crit)";
+    if (/주의|지연|부족|임박|대기|보류/.test(label)) return "var(--st-warn)";
+    if (/완료|양호|충족|정상|우수|적합/.test(label)) return "var(--st-good)";
+    if (/진행|예정/.test(label)) return "var(--st-run)";
+    return "";
+  }
+  function fmtNum(v) { return (Math.round(v * 10) / 10).toLocaleString("ko-KR"); }
+  function colorsFor(items) { var k = 0; return items.map(function (it) { return semantic(it.label) || CAT[Math.min(k++, CAT.length - 1)]; }); }
+  function chart(type, title, items) {
+    var total = items.reduce(function (s, it) { return s + it.v; }, 0), max = Math.max.apply(null, items.map(function (it) { return it.v; }));
+    var cols = colorsFor(items), unit = items[0].unit || "", h = '<div class="chart">' + (title ? '<div class="ct">' + esc(title) + "</div>" : "");
+    if (type === "도넛" && total > 0 && items.length <= 8) {
+      var acc = 0, segs = items.map(function (it, i) {
+        var p = it.v / total * 100, gap = items.length > 1 && p > 2 ? 0.9 : 0;
+        var s = '<circle cx="21" cy="21" r="15.915" fill="none" stroke="' + cols[i] + '" stroke-width="5" stroke-dasharray="' + Math.max(0, p - gap).toFixed(2) + " " + (100 - Math.max(0, p - gap)).toFixed(2) + '" stroke-dashoffset="' + (25 - acc).toFixed(2) + '"><title>' + esc(it.label) + " " + fmtNum(it.v) + unit + " (" + Math.round(p) + "%)</title></circle>";
+        acc += p; return s;
+      }).join("");
+      h += '<div class="dn"><svg viewBox="0 0 42 42" width="104" height="104" role="img" aria-label="' + esc(title || "도넛 그래프") + '">' + segs +
+        '<text x="21" y="20.5" text-anchor="middle" class="dnv">' + fmtNum(total) + '</text><text x="21" y="26" text-anchor="middle" class="dnu">' + esc(unit ? "전체 " + unit : "전체") + "</text></svg><div class=\"lg\">" +
+        items.map(function (it, i) { return '<div class="lr"><span class="sw" style="background:' + cols[i] + '"></span><span class="ll">' + esc(it.label) + '</span><b class="num">' + fmtNum(it.v) + esc(unit) + '</b><span class="lp">' + Math.round(it.v / total * 100) + "%</span></div>"; }).join("") + "</div></div>";
+    } else if (type === "선" && items.length >= 2) {
+      var W = 300, H = 96, L = 8, R = 8, T = 14, B = 20, min = Math.min.apply(null, items.map(function (it) { return it.v; }));
+      var lo = min >= 0 && min < max * 0.5 ? 0 : min, span = (max - lo) || 1;
+      var pts = items.map(function (it, i) { return [L + (W - L - R) * i / (items.length - 1), T + (H - T - B) * (1 - (it.v - lo) / span)]; });
+      var step = Math.ceil(items.length / 7);
+      h += '<svg viewBox="0 0 ' + W + " " + H + '" class="ln" role="img" aria-label="' + esc(title || "선 그래프") + '"><line x1="' + L + '" y1="' + (H - B) + '" x2="' + (W - R) + '" y2="' + (H - B) + '" class="ax"/>' +
+        '<polyline fill="none" stroke="var(--c1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="' + pts.map(function (p) { return p[0].toFixed(1) + "," + p[1].toFixed(1); }).join(" ") + '"/>' +
+        pts.map(function (p, i) {
+          var it = items[i], lab = i % step === 0 || i === items.length - 1, end = i === 0 || i === items.length - 1 || it.v === max;
+          return '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="3.5" fill="var(--c1)" stroke="var(--card2)" stroke-width="2"><title>' + esc(it.label) + " " + fmtNum(it.v) + esc(it.unit || "") + "</title></circle>" +
+            (end ? '<text x="' + p[0].toFixed(1) + '" y="' + (p[1] - 6).toFixed(1) + '" text-anchor="' + (i === 0 ? "start" : i === items.length - 1 ? "end" : "middle") + '" class="lv">' + fmtNum(it.v) + esc(it.unit || "") + "</text>" : "") +
+            (lab ? '<text x="' + p[0].toFixed(1) + '" y="' + (H - 6) + '" text-anchor="' + (i === 0 ? "start" : i === items.length - 1 ? "end" : "middle") + '" class="lx">' + esc(it.label) + "</text>" : "");
+        }).join("") + "</svg>";
+    } else {
+      h += '<div class="hb">' + items.map(function (it, i) {
+        return '<div class="hr" title="' + esc(it.label) + " " + fmtNum(it.v) + esc(it.unit || "") + '"><span class="hl">' + esc(it.label) + '</span><span class="ht"><i style="width:' + (max > 0 ? Math.max(1.5, it.v / max * 100) : 0).toFixed(1) + "%;background:" + cols[i] + '"></i></span><b class="num">' + fmtNum(it.v) + esc(it.unit || "") + "</b></div>";
+      }).join("") + "</div>";
+    }
+    return h + "</div>";
+  }
+  function due(m, mo, d) {
+    var now = new Date(), y = now.getFullYear(), dt = new Date(y, Number(mo) - 1, Number(d));
+    if (dt.getTime() - now.getTime() < -200 * 864e5) dt = new Date(y + 1, Number(mo) - 1, Number(d));
+    var left = Math.ceil((dt.getTime() - new Date(y, now.getMonth(), now.getDate()).getTime()) / 864e5);
+    var cls = left < 0 ? " late" : left <= 7 ? " soon" : "", tip = left < 0 ? Math.abs(left) + "일 지남" : left === 0 ? "오늘까지" : left + "일 남음";
+    return '<span class="due' + cls + '" title="' + tip + '">' + mo + "/" + d + "까지" + (cls ? " · " + tip : "") + "</span>";
+  }
+  function inl(raw, st) {
+    return esc(raw)
+      .replace(/([▰▱█░■□]{4,})(\s*\**\s*(\d{1,3}(?:\.\d+)?)\s*%)?/g, function (m, bar, rest, pct) {
+        var fill = (bar.match(/[▰█■]/g) || []).length, p = pct != null ? Math.min(100, Number(pct)) : fill / bar.length * 100;
+        return '<span class="pbar' + (st && st !== "none" ? " b-" + st : "") + '"><i style="width:' + p.toFixed(0) + '%"></i></span>' + (rest || "");
+      })
+      .replace(/\*\*(.+?)\*\*/g, function (m, s) { return /^[\d.,\s]+(%|건|명|곳|점|개|일|회|종|층|대|㎡|원|시간)?$/.test(s) ? '<b class="num">' + s + "</b>" : "<b>" + s + "</b>"; })
+      .replace(/(\d{1,2})\/(\d{1,2})까지/g, due)
       .replace(/\[(\d+)\]/g, function (m, n) { var r = byN[n]; return r ? '<span class="cite" data-ref="' + n + '" title="' + esc(r.title) + '">' + n + "</span>" : ""; });
-    if (li) { if (!inList) { out.push("<ul style=\"margin:4px 0;padding-left:18px\">"); inList = true; } out.push("<li>" + body + "</li>"); return; }
-    if (inList) { out.push("</ul>"); inList = false; }
-    if (h) out.push("<h2>" + body + "</h2>"); else if (l.trim()) out.push(body + "<br>"); else out.push("");
+  }
+  var lines = String(text || "").split("\n"), out = [], inList = false, first = true;
+  lines.forEach(function (l) {
+    var g = l.match(/^\s*\[\[그래프\s*(도넛|막대|선)?\s*\|(.*)\]\]\s*$/);
+    var h = l.match(/^#{1,3}\s+(.*)$/), li = l.match(/^\s*[-•]\s+(.*)$/);
+    if (inList && !li) { out.push("</ul>"); inList = false; }
+    if (g) {
+      var title = "", items = [];
+      g[2].split("|").forEach(function (part) {
+        var kv = part.match(/^\s*(.+?)\s*=\s*(-?[\d,.]+)\s*([^\d\s]*)\s*$/);
+        if (kv) { var v = Number(kv[2].replace(/,/g, "")); if (isFinite(v)) items.push({ label: kv[1], v: v, unit: kv[3] || "" }); }
+        else if (part.trim() && !title) title = part.trim();
+      });
+      if (items.length) out.push(chart(g[1] || "막대", title, items.slice(0, 24)));
+      return;
+    }
+    if (li) {
+      var t = li[1], pm = t.match(PIC), st = pm && ST[pm[1].replace(/️/g, "")] ? ST[pm[1].replace(/️/g, "")] : "";
+      if (st) t = pm[2];
+      if (!inList) { out.push('<ul class="al">'); inList = true; }
+      out.push('<li' + (st ? ' class="s-' + st + '" title="' + STN[st] + '"' : "") + ">" + inl(t, st) + "</li>");
+      return;
+    }
+    if (h) {
+      var hm = h[1].match(PIC);
+      out.push("<h2>" + (hm ? '<span class="pic">' + hm[1] + "</span><span>" + inl(hm[2]) + "</span>" : inl(h[1])) + "</h2>");
+      first = false; return;
+    }
+    if (l.trim()) { out.push('<div class="pl' + (first ? " lead" : "") + '">' + inl(l) + "</div>"); first = false; }
   });
   if (inList) out.push("</ul>");
-  return out.join("").replace(/(<br>)+$/, "");
+  return out.join("");
 }
 function refChip(r) {
   var a = appOf(r.app_id);
@@ -1147,7 +1276,9 @@ function sayText(t) {
   try {
     if (!("speechSynthesis" in window)) return;
     speechSynthesis.cancel();
-    var u = new SpeechSynthesisUtterance(String(t).replace(/\[\d+\]/g, "").replace(/^#+\s*/gm, "").replace(/\*\*/g, ""));
+    // 그래프 줄·막대 글자·그림 글자는 읽지 않는다
+    var u = new SpeechSynthesisUtterance(String(t).replace(/\[\[그래프[^\]]*\]\]/g, "").replace(/\[\d+\]/g, "").replace(/^#+\s*/gm, "").replace(/\*\*/g, "")
+      .replace(/[▰▱█░■□]+/g, "").replace(/(?:[☀-➿⬀-⯿]|[\uD83C-\uD83E][\uDC00-\uDFFF])️?/g, ""));
     u.lang = "ko-KR"; u.rate = 1.05;
     var v = speechSynthesis.getVoices().filter(function (x) { return /ko/i.test(x.lang); })[0]; if (v) u.voice = v;
     u.onstart = function () { orb("speak", "chat"); }; u.onend = function () { orb("idle", "chat"); };
