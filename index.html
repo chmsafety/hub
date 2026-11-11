@@ -1246,10 +1246,22 @@ function hydratePhotos(root) {
   sb.rpc("hub_photo_paths", { p_ids: need }).then(function (r) {
     var rows = (r && r.data) || [];
     if (!rows.length) return fail();
-    return sb.storage.from(rows[0].bucket).createSignedUrls(rows.map(function (x) { return x.path; }), 3600).then(function (s) {
-      ((s && s.data) || []).forEach(function (x, i) { var row = rows[i]; if (row) PHOTO[row.id] = { url: x.signedUrl || "", caption: row.caption || "", taken: row.taken, at: Date.now() }; });
-      fail();
+    // 사진이 있는 곳 세 가지: 사업장 관리 보관함(서명 주소) · 링크 공유된 드라이브(점검 사진, 주소 그대로) · 비공개 드라이브(강평 사진, 서버 함수 hub-photo 가 받아 옴)
+    var put = function (row, url) { PHOTO[row.id] = { url: url || "", caption: row.caption || "", taken: row.taken, at: Date.now() }; };
+    var store = rows.filter(function (x) { return x.bucket !== "drive" && x.bucket !== "conn"; }), jobs = [];
+    rows.forEach(function (x) { if (x.bucket === "drive") put(x, "https://lh3.googleusercontent.com/d/" + encodeURIComponent(x.path) + "=w1200"); });
+    rows.filter(function (x) { return x.bucket === "conn"; }).forEach(function (x) {
+      jobs.push(sb.functions.invoke("hub-photo", { body: { id: x.id } }).then(function (r) {
+        var d = r && r.data;
+        if (!d || !d.ok || !d.data) { put(x, ""); return; }
+        return fetch("data:" + (d.mime || "image/jpeg") + ";base64," + d.data).then(function (q) { return q.blob(); }).then(function (b) { put(x, URL.createObjectURL(b)); paint(); });
+      }).catch(function () { put(x, ""); }));
     });
+    if (store.length) jobs.push(sb.storage.from(store[0].bucket).createSignedUrls(store.map(function (x) { return x.path; }), 3600).then(function (s) {
+      ((s && s.data) || []).forEach(function (x, i) { if (store[i]) put(store[i], x.signedUrl); });
+    }).catch(function () {}));
+    paint();
+    return Promise.all(jobs).then(fail, fail);
   }).catch(fail);
 }
 function refChip(r) {
